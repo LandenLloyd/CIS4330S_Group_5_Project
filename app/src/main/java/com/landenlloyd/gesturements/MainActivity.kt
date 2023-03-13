@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    Greeting()
+                    TitleScreen()
                 }
             }
         }
@@ -36,38 +36,47 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting() {
+fun TitleText(modifier: Modifier = Modifier) {
+    Surface(
+        color = MaterialTheme.colors.primary,
+        shape = RoundedCornerShape(8.dp),
+        elevation = 8.dp,
+        modifier = modifier
+            .fillMaxSize()
+            .wrapContentHeight(align = Alignment.CenterVertically)
+            .wrapContentWidth(align = Alignment.CenterHorizontally)
+    ) {
+        Text(
+            modifier = Modifier.padding(16.dp),
+            text = "Gesturements"
+        )
+    }
+}
+
+
+
+@Composable
+fun TitleScreen(modifier: Modifier = Modifier) {
     val image = painterResource(id = R.drawable.instrument)
 
-    Surface(modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colors.background) {
-                Box {
-                    Image(
-                        painter = image,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .wrapContentHeight(align = Alignment.Top),
-                        contentScale = ContentScale.FillWidth,
-                        alpha = 0.75f
-                    )
-                    Surface (
-                            color = MaterialTheme.colors.primary,
-                            shape = RoundedCornerShape(8.dp),
-                            elevation = 8.dp,
-                            modifier = Modifier.wrapContentHeight(align = Alignment.CenterVertically)
-                                .wrapContentWidth(align = Alignment.CenterHorizontally)) {
-                        Text(modifier = Modifier.padding(16.dp),
-                            text = "Gesturements")
-                    }
-                }
-            }
+    Box {
+        Image(
+            painter = image,
+            contentDescription = null,
+            modifier = modifier
+                .fillMaxHeight()
+                .wrapContentHeight(align = Alignment.Top),
+            contentScale = ContentScale.FillWidth,
+            alpha = 0.75f
+        )
+        TitleText()
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     GesturementsTheme {
-        Greeting()
+        TitleScreen()
     }
 }
