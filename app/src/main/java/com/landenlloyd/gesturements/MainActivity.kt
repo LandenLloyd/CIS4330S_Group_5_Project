@@ -6,14 +6,13 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
@@ -38,38 +37,60 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TitleText(modifier: Modifier = Modifier) {
     Surface(
-        color = MaterialTheme.colors.primary,
+        color = MaterialTheme.colors.background,
         shape = RoundedCornerShape(8.dp),
         elevation = 8.dp,
         modifier = modifier
-            .fillMaxSize()
-            .wrapContentHeight(align = Alignment.CenterVertically)
-            .wrapContentWidth(align = Alignment.CenterHorizontally)
+            .wrapContentSize(align = Alignment.Center)
     ) {
         Text(
             modifier = Modifier.padding(16.dp),
-            text = "Gesturements"
+            text = stringResource(id = R.string.app_name)
         )
     }
 }
 
+@Composable
+fun InstrumentButton(modifier: Modifier = Modifier) {
+    Button(
+        onClick = { /*TODO*/ },
+        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
+        shape = RoundedCornerShape(8.dp),
+        elevation = ButtonDefaults.elevation(8.dp),
+        modifier = modifier.wrapContentSize(align = Alignment.Center)
+    ) {
+        Text(
+            modifier = Modifier.padding(16.dp),
+            text = stringResource(id = R.string.instrument_button_text)
+        )
+    }
+}
 
+@Composable
+fun TitleColumn(modifier: Modifier = Modifier) {
+    Column(modifier = modifier
+        .fillMaxSize()
+        .wrapContentSize(align = Alignment.Center)) {
+        TitleText()
+        InstrumentButton()
+    }
+}
 
 @Composable
 fun TitleScreen(modifier: Modifier = Modifier) {
     val image = painterResource(id = R.drawable.instrument)
 
-    Box {
+    Box(modifier = modifier) {
         Image(
             painter = image,
             contentDescription = null,
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxHeight()
                 .wrapContentHeight(align = Alignment.Top),
             contentScale = ContentScale.FillWidth,
             alpha = 0.75f
         )
-        TitleText()
+        TitleColumn()
     }
 }
 

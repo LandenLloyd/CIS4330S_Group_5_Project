@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Gesturements</string>
+    <string name="instrument_button_text">Instrument</string>
 </resources>
