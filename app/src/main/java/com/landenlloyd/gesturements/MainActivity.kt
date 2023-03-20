@@ -15,6 +15,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,11 +30,15 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    TitleScreen()
+                    GesturementsApp()
                 }
             }
         }
     }
+}
+
+enum class GesturementsScreen() {
+    Title, Instrument
 }
 
 @Composable
@@ -68,9 +75,11 @@ fun InstrumentButton(modifier: Modifier = Modifier) {
 
 @Composable
 fun TitleColumn(modifier: Modifier = Modifier) {
-    Column(modifier = modifier
-        .fillMaxSize()
-        .wrapContentSize(align = Alignment.Center)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .wrapContentSize(align = Alignment.Center)
+    ) {
         TitleText()
         InstrumentButton()
     }
@@ -91,6 +100,23 @@ fun TitleScreen(modifier: Modifier = Modifier) {
             alpha = 0.75f
         )
         TitleColumn()
+    }
+}
+
+@Composable
+fun GesturementsApp(modifier: Modifier = Modifier) {
+    val navController = rememberNavController()
+
+    Scaffold() {
+        NavHost(
+            navController = navController,
+            startDestination = GesturementsScreen.Title.name,
+            modifier = modifier.padding(it)
+        ) {
+            composable(route = GesturementsScreen.Title.name) {
+                TitleScreen()
+            }
+        }
     }
 }
 
