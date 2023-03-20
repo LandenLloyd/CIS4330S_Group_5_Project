@@ -5,7 +5,6 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -28,6 +27,7 @@ import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
+    private var accelerometerViewModel = AccelerometerViewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    GesturementsApp()
+                    GesturementsApp(accelerometerViewModel = accelerometerViewModel)
                 }
             }
         }
@@ -62,11 +62,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
-            val sides = event.values[0]
-            val upDown = event.values[1]
-
-            Log.d("Acceleromter", "Sides: $sides, UpDown: $upDown")
-
+            accelerometerViewModel.updateReadings(event.values[0], event.values[1], event.values[2])
         }
     }
 
@@ -148,15 +144,7 @@ fun TitleScreen(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> 
 }
 
 @Composable
-fun InstrumentReadingScreen(modifier: Modifier = Modifier) {
-    Text(
-        modifier = modifier,
-        text = stringResource(id = R.string.instrument_reading_title)
-    )
-}
-
-@Composable
-fun GesturementsApp(modifier: Modifier = Modifier) {
+fun GesturementsApp(modifier: Modifier = Modifier, accelerometerViewModel: AccelerometerViewModel) {
     val navController = rememberNavController()
 
     Scaffold {
@@ -174,7 +162,7 @@ fun GesturementsApp(modifier: Modifier = Modifier) {
             }
 
             composable(route = GesturementsScreen.Instrument.name) {
-                InstrumentReadingScreen()
+                InstrumentReadingScreen(accelerometerViewModel = accelerometerViewModel)
             }
         }
     }
@@ -184,7 +172,6 @@ fun GesturementsApp(modifier: Modifier = Modifier) {
 @Composable
 fun DefaultPreview() {
     GesturementsTheme {
-        InstrumentReadingScreen()
-
+        InstrumentReadingScreen(accelerometerViewModel = AccelerometerViewModel())
     }
 }
