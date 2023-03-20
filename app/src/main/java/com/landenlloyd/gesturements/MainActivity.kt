@@ -52,7 +52,8 @@ fun TitleText(modifier: Modifier = Modifier) {
     ) {
         Text(
             modifier = Modifier.padding(16.dp),
-            text = stringResource(id = R.string.app_name)
+            text = stringResource(id = R.string.app_name),
+            style = Typography().h5
         )
     }
 }
@@ -67,7 +68,7 @@ fun InstrumentButton(modifier: Modifier = Modifier) {
         modifier = modifier.wrapContentSize(align = Alignment.Center)
     ) {
         Text(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(8.dp),
             text = stringResource(id = R.string.instrument_button_text)
         )
     }
