@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class GesturementsScreen() {
+enum class GesturementsScreen {
     Title, Instrument
 }
 
@@ -59,9 +59,9 @@ fun TitleText(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun InstrumentButton(modifier: Modifier = Modifier) {
+fun InstrumentButton(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> Unit = {}) {
     Button(
-        onClick = { /*TODO*/ },
+        onClick = { onInstrumentButtonClicked() },
         colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
         shape = RoundedCornerShape(8.dp),
         elevation = ButtonDefaults.elevation(8.dp),
@@ -75,19 +75,19 @@ fun InstrumentButton(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun TitleColumn(modifier: Modifier = Modifier) {
+fun TitleColumn(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> Unit = {}) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .wrapContentSize(align = Alignment.Center)
     ) {
         TitleText()
-        InstrumentButton()
+        InstrumentButton(onInstrumentButtonClicked = onInstrumentButtonClicked)
     }
 }
 
 @Composable
-fun TitleScreen(modifier: Modifier = Modifier) {
+fun TitleScreen(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> Unit = {}) {
     val image = painterResource(id = R.drawable.instrument)
 
     Box(modifier = modifier) {
@@ -100,22 +100,38 @@ fun TitleScreen(modifier: Modifier = Modifier) {
             contentScale = ContentScale.FillWidth,
             alpha = 0.75f
         )
-        TitleColumn()
+        TitleColumn(onInstrumentButtonClicked = onInstrumentButtonClicked)
     }
+}
+
+@Composable
+fun InstrumentReadingScreen(modifier: Modifier = Modifier) {
+    Text(
+        modifier = modifier,
+        text = stringResource(id = R.string.instrument_reading_title)
+    )
 }
 
 @Composable
 fun GesturementsApp(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
 
-    Scaffold() {
+    Scaffold {
         NavHost(
             navController = navController,
             startDestination = GesturementsScreen.Title.name,
             modifier = modifier.padding(it)
         ) {
             composable(route = GesturementsScreen.Title.name) {
-                TitleScreen()
+                TitleScreen(onInstrumentButtonClicked = {
+                    navController.navigate(
+                        GesturementsScreen.Instrument.name
+                    )
+                })
+            }
+
+            composable(route = GesturementsScreen.Instrument.name) {
+                InstrumentReadingScreen()
             }
         }
     }
@@ -125,6 +141,7 @@ fun GesturementsApp(modifier: Modifier = Modifier) {
 @Composable
 fun DefaultPreview() {
     GesturementsTheme {
-        TitleScreen()
+        InstrumentReadingScreen()
+
     }
 }
