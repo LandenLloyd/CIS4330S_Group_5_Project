@@ -1,6 +1,11 @@
 package com.landenlloyd.gesturements
 
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -20,9 +25,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), SensorEventListener {
+
+    private lateinit var sensorManager: SensorManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        setUpSensor()
+
         setContent {
             GesturementsTheme {
                 // A surface container using the 'background' color from the theme
@@ -34,6 +45,38 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun setUpSensor() {
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
+        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.also {
+            sensorManager.registerListener(
+                this,
+                it,
+                SensorManager.SENSOR_DELAY_FASTEST,
+                SensorManager.SENSOR_DELAY_FASTEST
+            )
+        }
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
+            val sides = event.values[0]
+            val upDown = event.values[1]
+
+            Log.d("Acceleromter", "Sides: $sides, UpDown: $upDown")
+
+        }
+    }
+
+    override fun onAccuracyChanged(event: Sensor?, p1: Int) {
+        return
+    }
+
+    override fun onDestroy() {
+        sensorManager.unregisterListener(this)
+        super.onDestroy()
     }
 }
 
