@@ -19,8 +19,8 @@ class Sensor3DViewModel(frameWidth: Int = 20, private val overlap: Float = 0f) :
     private val _sensorState = MutableStateFlow(SensorState())
     val sensorState = _sensorState.asStateFlow()
 
-    fun updateReadings(x: Float, y: Float, z: Float) {
-        if (_frame.updateReadings(x, y, z)) {
+    fun updateReadings(t: Long, x: Float, y: Float, z: Float) {
+        if (_frame.updateReadings(t, x, y, z)) {
             val (_x, _y, _z) = _frame.getAverages()
             _sensorState.value = SensorState(_x, _y, _z)
             _frame.clear(overlap)
@@ -34,11 +34,12 @@ class SensorFrame(private val frameWidth: Int) {
 
     // Returns true if the frame is at capacity after adding the readings.
     // Does not add any new elements if the frame is already at capacity
-    fun updateReadings(x: Float, y: Float, z: Float): Boolean {
+    fun updateReadings(t: Long, x: Float, y: Float, z: Float): Boolean {
         if (_frameSize == frameWidth) {
             return true
         }
 
+        _content.t[_frameSize] = t
         _content.x[_frameSize] = x
         _content.y[_frameSize] = y
         _content.z[_frameSize] = z
@@ -51,12 +52,19 @@ class SensorFrame(private val frameWidth: Int) {
     fun clear(overlap: Float) {
         val numOverlap = (frameWidth * overlap).roundToInt()
 
+        val overlapElementsT = _content.t.takeLast(numOverlap).toLongArray().copyOf(frameWidth)
         val overlapElementsX = _content.x.takeLast(numOverlap).toFloatArray().copyOf(frameWidth)
         val overlapElementsY = _content.y.takeLast(numOverlap).toFloatArray().copyOf(frameWidth)
         val overlapElementsZ = _content.z.takeLast(numOverlap).toFloatArray().copyOf(frameWidth)
 
         _content =
-            SensorFrameContent(frameWidth, overlapElementsX, overlapElementsY, overlapElementsZ)
+            SensorFrameContent(
+                frameWidth,
+                overlapElementsT,
+                overlapElementsX,
+                overlapElementsY,
+                overlapElementsZ
+            )
         _frameSize = numOverlap
     }
 
@@ -70,6 +78,7 @@ class SensorFrame(private val frameWidth: Int) {
 
 data class SensorFrameContent(
     val frameWidth: Int,
+    val t: LongArray = LongArray(frameWidth) { 0 },
     val x: FloatArray = FloatArray(frameWidth) { 0f },
     val y: FloatArray = FloatArray(frameWidth) { 0f },
     val z: FloatArray = FloatArray(frameWidth) { 0f },
@@ -81,6 +90,7 @@ data class SensorFrameContent(
         other as SensorFrameContent
 
         if (frameWidth != other.frameWidth) return false
+        if (!t.contentEquals(other.t)) return false
         if (!x.contentEquals(other.x)) return false
         if (!y.contentEquals(other.y)) return false
         if (!z.contentEquals(other.z)) return false
@@ -90,6 +100,7 @@ data class SensorFrameContent(
 
     override fun hashCode(): Int {
         var result = frameWidth
+        result = 31 * result + t.contentHashCode()
         result = 31 * result + x.contentHashCode()
         result = 31 * result + y.contentHashCode()
         result = 31 * result + z.contentHashCode()
