@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
     private var accelerometerViewModel = AccelerometerViewModel()
+    private var gyroscopeViewModel = GyroscopeViewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +42,10 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    GesturementsApp(accelerometerViewModel = accelerometerViewModel)
+                    GesturementsApp(
+                        accelerometerViewModel = accelerometerViewModel,
+                        gyroscopeViewModel = gyroscopeViewModel
+                    )
                 }
             }
         }
@@ -63,6 +67,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
             accelerometerViewModel.updateReadings(event.values[0], event.values[1], event.values[2])
+        } else if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
+            gyroscopeViewModel.updateReadings(event.values[0], event.values[1], event.values[2])
         }
     }
 
@@ -144,7 +150,11 @@ fun TitleScreen(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> 
 }
 
 @Composable
-fun GesturementsApp(modifier: Modifier = Modifier, accelerometerViewModel: AccelerometerViewModel) {
+fun GesturementsApp(
+    modifier: Modifier = Modifier,
+    accelerometerViewModel: AccelerometerViewModel,
+    gyroscopeViewModel: GyroscopeViewModel
+) {
     val navController = rememberNavController()
 
     Scaffold {
@@ -162,7 +172,10 @@ fun GesturementsApp(modifier: Modifier = Modifier, accelerometerViewModel: Accel
             }
 
             composable(route = GesturementsScreen.Instrument.name) {
-                InstrumentReadingScreen(accelerometerViewModel = accelerometerViewModel)
+                InstrumentReadingScreen(
+                    accelerometerViewModel = accelerometerViewModel,
+                    gyroscopeViewModel = gyroscopeViewModel
+                )
             }
         }
     }
@@ -172,6 +185,6 @@ fun GesturementsApp(modifier: Modifier = Modifier, accelerometerViewModel: Accel
 @Composable
 fun DefaultPreview() {
     GesturementsTheme {
-        InstrumentReadingScreen(accelerometerViewModel = AccelerometerViewModel())
+        InstrumentReadingScreen(accelerometerViewModel = AccelerometerViewModel(), gyroscopeViewModel = GyroscopeViewModel())
     }
 }
