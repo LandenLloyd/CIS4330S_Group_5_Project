@@ -11,31 +11,16 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class AccelerometerViewModel : ViewModel() {
-    private val _accelerometerState = MutableStateFlow(AccelerometerState())
-    val accelerometerState = _accelerometerState.asStateFlow()
+class Sensor3DViewModel : ViewModel() {
+    private val _sensorState = MutableStateFlow(SensorState())
+    val sensorState = _sensorState.asStateFlow()
 
     fun updateReadings(x: Float, y: Float, z: Float) {
-        _accelerometerState.value = AccelerometerState(x, y, z)
+        _sensorState.value = SensorState(x, y, z)
     }
 }
 
-data class AccelerometerState(
-    val x: Float = 0f,
-    val y: Float = 0f,
-    val z: Float = 0f
-)
-
-class GyroscopeViewModel : ViewModel() {
-    private val _gyroscopeState = MutableStateFlow(GyroscopeState())
-    val gyroscopeState = _gyroscopeState.asStateFlow()
-
-    fun updateReadings(x: Float, y: Float, z: Float) {
-        _gyroscopeState.value = GyroscopeState(x, y, z)
-    }
-}
-
-data class GyroscopeState(
+data class SensorState(
     val x: Float = 0f,
     val y: Float = 0f,
     val z: Float = 0f
@@ -44,11 +29,11 @@ data class GyroscopeState(
 @Composable
 fun AccelerometerReading(
     modifier: Modifier = Modifier,
-    accelerometerViewModel: AccelerometerViewModel,
-    gyroscopeViewModel: GyroscopeViewModel
+    accelerometerViewModel: Sensor3DViewModel,
+    gyroscopeViewModel: Sensor3DViewModel
 ) {
-    val accelerometerState by accelerometerViewModel.accelerometerState.collectAsState()
-    val gyroscopeState by gyroscopeViewModel.gyroscopeState.collectAsState()
+    val accelerometerState by accelerometerViewModel.sensorState.collectAsState()
+    val gyroscopeState by gyroscopeViewModel.sensorState.collectAsState()
 
     Column(modifier = modifier) {
         Text(
@@ -63,8 +48,8 @@ fun AccelerometerReading(
 @Composable
 fun InstrumentReadingScreen(
     modifier: Modifier = Modifier,
-    accelerometerViewModel: AccelerometerViewModel,
-    gyroscopeViewModel: GyroscopeViewModel
+    accelerometerViewModel: Sensor3DViewModel,
+    gyroscopeViewModel: Sensor3DViewModel
 ) {
     Column {
         Text(

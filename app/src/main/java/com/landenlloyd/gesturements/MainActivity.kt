@@ -27,8 +27,8 @@ import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
-    private var accelerometerViewModel = AccelerometerViewModel()
-    private var gyroscopeViewModel = GyroscopeViewModel()
+    private var accelerometerViewModel = Sensor3DViewModel()
+    private var gyroscopeViewModel = Sensor3DViewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -152,8 +152,8 @@ fun TitleScreen(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> 
 @Composable
 fun GesturementsApp(
     modifier: Modifier = Modifier,
-    accelerometerViewModel: AccelerometerViewModel,
-    gyroscopeViewModel: GyroscopeViewModel
+    accelerometerViewModel: Sensor3DViewModel,
+    gyroscopeViewModel: Sensor3DViewModel
 ) {
     val navController = rememberNavController()
 
@@ -185,6 +185,6 @@ fun GesturementsApp(
 @Composable
 fun DefaultPreview() {
     GesturementsTheme {
-        InstrumentReadingScreen(accelerometerViewModel = AccelerometerViewModel(), gyroscopeViewModel = GyroscopeViewModel())
+        InstrumentReadingScreen(accelerometerViewModel = Sensor3DViewModel(), gyroscopeViewModel = Sensor3DViewModel())
     }
 }
