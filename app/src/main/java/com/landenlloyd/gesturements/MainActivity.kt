@@ -22,7 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.jsyn.JSyn
+import com.jsyn.Synthesizer
+import com.jsyn.unitgen.LineOut
+import com.jsyn.unitgen.SineOscillator
+import com.landenlloyd.gesturements.android.JSynAndroidAudioDevice
 import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
+
 
 class MainActivity : ComponentActivity(), SensorEventListener {
 
@@ -119,6 +125,48 @@ fun InstrumentButton(modifier: Modifier = Modifier, onInstrumentButtonClicked: (
     }
 }
 
+/* https://github.com/philburk/jsyn/blob/master/examples/src/main/java/com/jsyn/examples/PlayTone.java
+ * Example function to test sound playback functionality. TODO: remove */
+private fun testBing() {
+
+    // Create a context for the synthesizer.
+    val synth: Synthesizer = JSyn.createSynthesizer(JSynAndroidAudioDevice())
+
+    // Start synthesizer using default stereo output at 44100 Hz.
+    synth.start()
+
+    // Add a tone generator.
+    val oscillator = SineOscillator()
+    synth.add(oscillator)
+    // Add a stereo audio output unit.
+    val lineOut = LineOut()
+    synth.add(lineOut)
+
+    // Connect the oscillator to both channels of the output.
+    oscillator.output.connect(0, lineOut.input, 0)
+    oscillator.output.connect(0, lineOut.input, 1)
+
+    // Set the frequency and amplitude for the sine wave.
+    oscillator.frequency.set(345.0)
+    oscillator.amplitude.set(0.6)
+
+    // We only need to start the LineOut. It will pull data from the
+    // oscillator.
+    lineOut.start()
+
+    // Sleep while the sound is generated in the background.
+    try {
+        val time: Double = synth.getCurrentTime()
+        // Sleep for a few seconds.
+        synth.sleepUntil(time + 4.0)
+    } catch (e: InterruptedException) {
+        e.printStackTrace()
+    }
+
+    // Stop everything.
+    synth.stop()
+}
+
 @Composable
 fun TitleColumn(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> Unit = {}) {
     Column(
@@ -128,6 +176,18 @@ fun TitleColumn(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> 
     ) {
         TitleText()
         InstrumentButton(onInstrumentButtonClicked = onInstrumentButtonClicked)
+        Button(
+            onClick = { testBing() },
+            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
+            shape = RoundedCornerShape(8.dp),
+            elevation = ButtonDefaults.elevation(8.dp),
+            modifier = modifier.wrapContentSize(align = Alignment.Center)
+        ) {
+            Text(
+                modifier = Modifier.padding(8.dp),
+                text = "Bing"
+            )
+        }
     }
 }
 
