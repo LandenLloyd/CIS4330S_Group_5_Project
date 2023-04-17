@@ -168,7 +168,11 @@ data class SensorFrameContent(
 
 /**
  * Syncs the content in x2, y2, and z2 to the time t1.
- * Returns the new x2, y2, and z2
+ * Returns the new x2, y2, and z2.
+ *
+ * TODO: Currently, syncFrames does not extrapolate properly; if
+ * t1 contains time points outside the range of t2, then it
+ * simply uses the first or last value from x/y/z2.
  */
 fun syncFrames(
     t1: DoubleArray,
@@ -182,9 +186,39 @@ fun syncFrames(
     val functionY: UnivariateFunction = interpolator.interpolate(t2, y2)
     val functionZ: UnivariateFunction = interpolator.interpolate(t2, z2)
 
-    val newX1 = DoubleArray(t1.size) { functionX.value(t1[it]) }
-    val newY1 = DoubleArray(t1.size) { functionY.value(t1[it]) }
-    val newZ1 = DoubleArray(t1.size) { functionZ.value(t1[it]) }
+    val min_t2 = t2[0]
+    val max_t2 = t2[t2.size - 1]
+
+    val newX1 = DoubleArray(t1.size) {
+        val t = t1[it]
+        if (t < min_t2) {
+            x2[0]
+        } else if (t > max_t2) {
+            x2[x2.size - 1]
+        } else {
+            functionX.value(t)
+        }
+    }
+    val newY1 = DoubleArray(t1.size) {
+        val t = t1[it]
+        if (t < min_t2) {
+            y2[0]
+        } else if (t > max_t2) {
+            y2[y2.size - 1]
+        } else {
+            functionY.value(t)
+        }
+    }
+    val newZ1 = DoubleArray(t1.size) {
+        val t = t1[it]
+        if (t < min_t2) {
+            z2[0]
+        } else if (t > max_t2) {
+            z2[z2.size - 1]
+        } else {
+            functionZ.value(t)
+        }
+    }
 
     return Triple(newX1, newY1, newZ1)
 }
