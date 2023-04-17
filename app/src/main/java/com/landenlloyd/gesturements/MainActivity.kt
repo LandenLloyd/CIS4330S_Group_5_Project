@@ -5,6 +5,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -60,7 +61,19 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private fun setUpSensor() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
+        val deviceSensors: List<Sensor> = sensorManager.getSensorList(Sensor.TYPE_ALL)
+        Log.d("MainActivity", "List of device sensors: $deviceSensors")
+
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.also {
+            sensorManager.registerListener(
+                this,
+                it,
+                SensorManager.SENSOR_DELAY_FASTEST,
+                SensorManager.SENSOR_DELAY_FASTEST
+            )
+        }
+
+        sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)?.also {
             sensorManager.registerListener(
                 this,
                 it,
