@@ -44,10 +44,16 @@ class Sensor3DViewModel(frameWidth: Int = 20, private val overlap: Float = 0f) :
      */
     fun updateReadings(t: Long, x: Float, y: Float, z: Float) {
         if (_frame.updateReadings(t.toDouble(), x.toDouble(), y.toDouble(), z.toDouble())) {
+            preprocess()
+
             val (_x, _y, _z) = _frame.getAverages()
             _sensorState.value = SensorState(_x, _y, _z)
             _frame.clear(overlap)
         }
+    }
+
+    private fun preprocess() {
+        var preprocessor = SensorFramePreprocessor(_frame)
     }
 }
 
