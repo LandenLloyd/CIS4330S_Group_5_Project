@@ -19,6 +19,8 @@ class OverlapValueException(overlap: Float) :
  * @param frameWidth the number of sensor readings stored in each data frame.
  * @param overlap the portion of frame entries (between 0f and 1f) that are carried over from
  * the previous frame.
+ * @param frameSyncConnector If you want this 3DViewModel to be synced with another, pass in
+ * one of the connectors from an instance of FrameSync (refer to FrameSync for more details)
  */
 class Sensor3DViewModel(
     frameWidth: Int = 30,
@@ -212,7 +214,25 @@ data class SensorFrameContent(
     }
 }
 
+/**
+ * This class synchronizes the timestamps for two Sensor3DViewModels. Example of use:
+ *
+ * // Create a FrameSync with a callback that uses the data contained in the two frames
+ * frameSync = FrameSync { accelerometerFrame: SensorFrame, gyroscopeFrame: SensorFrame ->
+ *      Log.d("setUpSensor", "Frames were successfully synced")
+ *
+ *      accelerometerViewModel.updateReadings(accelerometerFrame.getAverages())
+ *      gyroscopeViewModel.updateReadings(gyroscopeFrame.getAverages())
+ * }
+ *
+ * // Create two instances of Sensor3DViewModel that are connected to frameSync
+ * accelerometerViewModel = Sensor3DViewModel(frameSyncConnector = frameSync.left)
+ * gyroscopeViewModel = Sensor3DViewModel(frameSyncConnector = frameSync.right)
+ */
 class FrameSync(val onSync: (SensorFrame, SensorFrame) -> Unit) {
+    // numValidFrames tracks the number of FrameSyncConnectors that contain
+    // a new frame to be synced. This variable is synchronized as the sensor
+    // event callback may be multithreaded, and we want to ensure no frame is lost.
     private var numValidFramesLock = Object()
     private var numValidFrames = 0
 
