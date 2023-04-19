@@ -8,7 +8,8 @@ import org.apache.commons.math4.legacy.analysis.interpolation.SplineInterpolator
 import org.apache.commons.math4.legacy.analysis.interpolation.UnivariateInterpolator
 import kotlin.math.roundToInt
 
-class OverlapValueException(overlap: Float) : Exception("Sensor3DViewModel: property `overlap` has invalid value ${overlap}; `overlap` must fall between 0f and 1f")
+class OverlapValueException(overlap: Float) :
+    Exception("Sensor3DViewModel: property `overlap` has invalid value ${overlap}; `overlap` must fall between 0f and 1f")
 
 /**
  * The Sensor3DViewModel serves as the UI state for xyz sensor readings.
@@ -19,7 +20,11 @@ class OverlapValueException(overlap: Float) : Exception("Sensor3DViewModel: prop
  * @param overlap the portion of frame entries (between 0f and 1f) that are carried over from
  * the previous frame.
  */
-class Sensor3DViewModel(frameWidth: Int = 20, private val overlap: Float = 0f) :
+class Sensor3DViewModel(
+    frameWidth: Int = 20,
+    private val overlap: Float = 0f,
+    private val frameSyncConnector: FrameSync.FrameSyncConnector? = null
+) :
     ViewModel() {
     init {
         if (overlap < 0f || overlap > 1f) {
@@ -42,18 +47,32 @@ class Sensor3DViewModel(frameWidth: Int = 20, private val overlap: Float = 0f) :
      * @param y the y-coordinate for a sensor reading
      * @param z the z-coordinate for a sensor reading
      */
-    fun updateReadings(t: Long, x: Float, y: Float, z: Float) {
+    fun appendReadings(t: Long, x: Float, y: Float, z: Float) {
         if (_frame.updateReadings(t.toDouble(), x.toDouble(), y.toDouble(), z.toDouble())) {
-            preprocess()
+            if (frameSyncConnector == null) { // legacy: update UI with the raw values
+                val (_x, _y, _z) = _frame.getAverages()
+                updateReadings(_x, _y, _z)
+            } else { // current: inform the frameSyncConnector that a new frame is available
+                frameSyncConnector.frame = _frame
+            }
 
-            val (_x, _y, _z) = _frame.getAverages()
-            _sensorState.value = SensorState(_x, _y, _z)
+            // Make sure the frame gets cleared in both cases
             _frame.clear(overlap)
         }
     }
 
-    private fun preprocess() {
-        var preprocessor = SensorFramePreprocessor(_frame)
+    /**
+     * Updates the `sensorState` to reflect a SensorState with values `x`, `y`, and `z`
+     */
+    fun updateReadings(x: Float, y: Float, z: Float) {
+        _sensorState.value = SensorState(x, y, z)
+    }
+
+    /**
+     * Updates the `sensorState` to xyz corresponding to the triplet `values`
+     */
+    fun updateReadings(readings: Triple<Float, Float, Float>) {
+        updateReadings(readings.first, readings.second, readings.third)
     }
 }
 
@@ -73,7 +92,7 @@ data class SensorState(
  * @param frameWidth the sensor reading capacity of this frame
  */
 class SensorFrame(private val frameWidth: Int) {
-    private var _content = SensorFrameContent(frameWidth)
+    var content = SensorFrameContent(frameWidth)
     private var _frameSize = 0
 
     /**
@@ -90,10 +109,10 @@ class SensorFrame(private val frameWidth: Int) {
             return true
         }
 
-        _content.t[_frameSize] = t
-        _content.x[_frameSize] = x
-        _content.y[_frameSize] = y
-        _content.z[_frameSize] = z
+        content.t[_frameSize] = t
+        content.x[_frameSize] = x
+        content.y[_frameSize] = y
+        content.z[_frameSize] = z
         _frameSize += 1
 
         return _frameSize == frameWidth
@@ -110,12 +129,12 @@ class SensorFrame(private val frameWidth: Int) {
 
         val numOverlap = (frameWidth * overlap).roundToInt()
 
-        val overlapElementsT = _content.t.takeLast(numOverlap).toDoubleArray().copyOf(frameWidth)
-        val overlapElementsX = _content.x.takeLast(numOverlap).toDoubleArray().copyOf(frameWidth)
-        val overlapElementsY = _content.y.takeLast(numOverlap).toDoubleArray().copyOf(frameWidth)
-        val overlapElementsZ = _content.z.takeLast(numOverlap).toDoubleArray().copyOf(frameWidth)
+        val overlapElementsT = content.t.takeLast(numOverlap).toDoubleArray().copyOf(frameWidth)
+        val overlapElementsX = content.x.takeLast(numOverlap).toDoubleArray().copyOf(frameWidth)
+        val overlapElementsY = content.y.takeLast(numOverlap).toDoubleArray().copyOf(frameWidth)
+        val overlapElementsZ = content.z.takeLast(numOverlap).toDoubleArray().copyOf(frameWidth)
 
-        _content =
+        content =
             SensorFrameContent(
                 frameWidth,
                 overlapElementsT,
@@ -130,10 +149,18 @@ class SensorFrame(private val frameWidth: Int) {
      * Returns the average x, y, and z readings, respectively
      */
     fun getAverages(): Triple<Float, Float, Float> {
-        val x = _content.x.average().toFloat()
-        val y = _content.y.average().toFloat()
-        val z = _content.z.average().toFloat()
+        val x = content.x.average().toFloat()
+        val y = content.y.average().toFloat()
+        val z = content.z.average().toFloat()
         return Triple(x, y, z)
+    }
+
+    /**
+     * Calls `syncFrame` to sync the content of this `SensorFrame` with the time values in `t`
+     */
+    fun syncToTime(t: DoubleArray) {
+        val triple = syncFrames(t, content.t, content.x, content.y, content.z)
+        content = SensorFrameContent(frameWidth, t, triple.first, triple.second, triple.third)
     }
 }
 
@@ -169,6 +196,34 @@ data class SensorFrameContent(
         result = 31 * result + y.contentHashCode()
         result = 31 * result + z.contentHashCode()
         return result
+    }
+}
+
+class FrameSync(val onSync: (SensorFrame, SensorFrame) -> Unit) {
+    class FrameSyncConnector(private val frameSync: FrameSync) {
+        var frame: SensorFrame? = null
+            set(value) {
+                field = value
+
+                if (value != null) {
+                    frameSync.trySync()
+                }
+            }
+    }
+
+    val left: FrameSyncConnector = FrameSyncConnector(this)
+    val right: FrameSyncConnector = FrameSyncConnector(this)
+
+    fun trySync() {
+        val leftFrame = left.frame
+        val rightFrame = right.frame
+        left.frame = null
+        right.frame = null
+
+        if (leftFrame != null && rightFrame != null) {
+            leftFrame.syncToTime(rightFrame.content.t)
+            onSync(leftFrame, rightFrame)
+        }
     }
 }
 

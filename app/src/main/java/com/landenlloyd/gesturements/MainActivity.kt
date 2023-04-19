@@ -34,8 +34,11 @@ import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
-    private var accelerometerViewModel = Sensor3DViewModel()
-    private var gyroscopeViewModel = Sensor3DViewModel()
+    private lateinit var accelerometerViewModel: Sensor3DViewModel
+    private lateinit var gyroscopeViewModel: Sensor3DViewModel
+    private lateinit var frameSync: FrameSync
+
+//    private lateinit var firebaseDatabaseReference: DatabaseReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,8 +64,18 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private fun setUpSensor() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
-        val deviceSensors: List<Sensor> = sensorManager.getSensorList(Sensor.TYPE_ALL)
-        Log.d("MainActivity", "List of device sensors: $deviceSensors")
+//        firebaseDatabaseReference = Firebase.database("https://gesturements-default-rtdb.firebaseio.com/data").reference
+
+        // Initialize the sensing pipeline
+        frameSync = FrameSync { accelerometerFrame: SensorFrame, gyroscopeFrame: SensorFrame ->
+            Log.d("setUpSensor", "Frames were successfully synced")
+
+            accelerometerViewModel.updateReadings(accelerometerFrame.getAverages())
+            gyroscopeViewModel.updateReadings(gyroscopeFrame.getAverages())
+        }
+
+        accelerometerViewModel = Sensor3DViewModel(frameSyncConnector = frameSync.left)
+        gyroscopeViewModel = Sensor3DViewModel(frameSyncConnector = frameSync.right)
 
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.also {
             sensorManager.registerListener(
@@ -85,9 +98,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
-            accelerometerViewModel.updateReadings(event.timestamp, event.values[0], event.values[1], event.values[2])
+            accelerometerViewModel.appendReadings(event.timestamp, event.values[0], event.values[1], event.values[2])
         } else if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
-            gyroscopeViewModel.updateReadings(event.timestamp, event.values[0], event.values[1], event.values[2])
+            gyroscopeViewModel.appendReadings(event.timestamp, event.values[0], event.values[1], event.values[2])
         }
     }
 
