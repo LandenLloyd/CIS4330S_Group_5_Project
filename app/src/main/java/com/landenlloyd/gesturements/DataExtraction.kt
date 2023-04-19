@@ -21,7 +21,7 @@ class OverlapValueException(overlap: Float) :
  * the previous frame.
  */
 class Sensor3DViewModel(
-    frameWidth: Int = 20,
+    frameWidth: Int = 30,
     private val overlap: Float = 0f,
     private val frameSyncConnector: FrameSync.FrameSyncConnector? = null
 ) :
@@ -53,7 +53,8 @@ class Sensor3DViewModel(
                 val (_x, _y, _z) = _frame.getAverages()
                 updateReadings(_x, _y, _z)
             } else { // current: inform the frameSyncConnector that a new frame is available
-                frameSyncConnector.frame = _frame
+                // We duplicate the sensorFrame so that we can later clear the frame
+                frameSyncConnector.frame = SensorFrame.from(_frame)
             }
 
             // Make sure the frame gets cleared in both cases
@@ -92,6 +93,18 @@ data class SensorState(
  * @param frameWidth the sensor reading capacity of this frame
  */
 class SensorFrame(private val frameWidth: Int) {
+    companion object {
+        /**
+         * Initialize a SensorFrame instance from an existing instance
+         */
+        fun from(sensorFrame: SensorFrame): SensorFrame {
+            val newSensorFrame = SensorFrame(sensorFrame.frameWidth)
+            newSensorFrame.content = sensorFrame.content
+            newSensorFrame._frameSize = sensorFrame._frameSize
+            return newSensorFrame
+        }
+    }
+
     var content = SensorFrameContent(frameWidth)
     private var _frameSize = 0
 
@@ -200,13 +213,20 @@ data class SensorFrameContent(
 }
 
 class FrameSync(val onSync: (SensorFrame, SensorFrame) -> Unit) {
+    private var numValidFramesLock = Object()
+    private var numValidFrames = 0
+
     class FrameSyncConnector(private val frameSync: FrameSync) {
         var frame: SensorFrame? = null
             set(value) {
-                field = value
-
                 if (value != null) {
+                    synchronized(frameSync.numValidFramesLock) {
+                        field = value
+                        frameSync.numValidFrames += 1
+                    }
                     frameSync.trySync()
+                } else {
+                    field = null
                 }
             }
     }
@@ -215,10 +235,19 @@ class FrameSync(val onSync: (SensorFrame, SensorFrame) -> Unit) {
     val right: FrameSyncConnector = FrameSyncConnector(this)
 
     fun trySync() {
-        val leftFrame = left.frame
-        val rightFrame = right.frame
-        left.frame = null
-        right.frame = null
+        val leftFrame: SensorFrame?
+        val rightFrame: SensorFrame?
+
+        synchronized(numValidFramesLock) {
+            leftFrame = left.frame
+            rightFrame = right.frame
+
+            if (numValidFrames >= 2) {
+                left.frame = null
+                right.frame = null
+                numValidFrames = 0
+            }
+        }
 
         if (leftFrame != null && rightFrame != null) {
             leftFrame.syncToTime(rightFrame.content.t)
