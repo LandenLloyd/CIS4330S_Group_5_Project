@@ -23,6 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.FirebaseApp
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ktx.database
+import com.google.firebase.ktx.Firebase
 import com.jsyn.JSyn
 import com.jsyn.Synthesizer
 import com.jsyn.unitgen.LineOut
@@ -38,7 +42,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private lateinit var gyroscopeViewModel: Sensor3DViewModel
     private lateinit var frameSync: FrameSync
 
-//    private lateinit var firebaseDatabaseReference: DatabaseReference
+    private lateinit var firebaseDatabaseReference: DatabaseReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +68,22 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private fun setUpSensor() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
-//        firebaseDatabaseReference = Firebase.database("https://gesturements-default-rtdb.firebaseio.com/data").reference
+        FirebaseApp.initializeApp(applicationContext)
+        firebaseDatabaseReference =
+            Firebase.database("https://gesturements-default-rtdb.firebaseio.com").reference.child("data")
+
+        // Create functions that can be used by our Sensor3DViewModels to write to Firebase
+        var readNumber = 0
+        val accelRawWrite: (Long, Double, Double, Double) -> Unit =
+            { t: Long, x: Double, y: Double, z: Double ->
+                val target =
+                    firebaseDatabaseReference.child("accel_raw").child(readNumber.toString())
+                readNumber++
+                target.child("t").setValue(t)
+                target.child("x").setValue(x)
+                target.child("y").setValue(y)
+                target.child("z").setValue(z)
+            }
 
         // Initialize the sensing pipeline
         frameSync = FrameSync { accelerometerFrame: SensorFrame, gyroscopeFrame: SensorFrame ->
@@ -74,15 +93,16 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             gyroscopeViewModel.updateReadings(gyroscopeFrame.getAverages())
         }
 
-        accelerometerViewModel = Sensor3DViewModel(frameSyncConnector = frameSync.left)
+        accelerometerViewModel =
+            Sensor3DViewModel(frameSyncConnector = frameSync.left, onWrite = accelRawWrite)
         gyroscopeViewModel = Sensor3DViewModel(frameSyncConnector = frameSync.right)
 
-        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.also {
+        sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)?.also {
             sensorManager.registerListener(
                 this,
                 it,
-                SensorManager.SENSOR_DELAY_FASTEST,
-                SensorManager.SENSOR_DELAY_FASTEST
+                SensorManager.SENSOR_DELAY_GAME,
+                SensorManager.SENSOR_DELAY_GAME
             )
         }
 
@@ -90,17 +110,27 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             sensorManager.registerListener(
                 this,
                 it,
-                SensorManager.SENSOR_DELAY_FASTEST,
-                SensorManager.SENSOR_DELAY_FASTEST
+                SensorManager.SENSOR_DELAY_GAME,
+                SensorManager.SENSOR_DELAY_GAME
             )
         }
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
-            accelerometerViewModel.appendReadings(event.timestamp, event.values[0], event.values[1], event.values[2])
+        if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION) {
+            accelerometerViewModel.appendReadings(
+                event.timestamp,
+                event.values[0],
+                event.values[1],
+                event.values[2]
+            )
         } else if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
-            gyroscopeViewModel.appendReadings(event.timestamp, event.values[0], event.values[1], event.values[2])
+            gyroscopeViewModel.appendReadings(
+                event.timestamp,
+                event.values[0],
+                event.values[1],
+                event.values[2]
+            )
         }
     }
 
@@ -271,6 +301,9 @@ fun GesturementsApp(
 @Composable
 fun DefaultPreview() {
     GesturementsTheme {
-        InstrumentReadingScreen(accelerometerViewModel = Sensor3DViewModel(), gyroscopeViewModel = Sensor3DViewModel())
+        InstrumentReadingScreen(
+            accelerometerViewModel = Sensor3DViewModel(),
+            gyroscopeViewModel = Sensor3DViewModel()
+        )
     }
 }

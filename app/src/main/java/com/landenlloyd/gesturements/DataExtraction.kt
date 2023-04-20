@@ -25,7 +25,8 @@ class OverlapValueException(overlap: Float) :
 class Sensor3DViewModel(
     frameWidth: Int = 30,
     private val overlap: Float = 0f,
-    private val frameSyncConnector: FrameSync.FrameSyncConnector? = null
+    private val frameSyncConnector: FrameSync.FrameSyncConnector? = null,
+    private val onWrite: ((Long, Double, Double, Double) -> Unit)? = null
 ) :
     ViewModel() {
     init {
@@ -50,6 +51,8 @@ class Sensor3DViewModel(
      * @param z the z-coordinate for a sensor reading
      */
     fun appendReadings(t: Long, x: Float, y: Float, z: Float) {
+        onWrite?.invoke(t, x.toDouble(), y.toDouble(), z.toDouble())
+
         if (_frame.updateReadings(t.toDouble(), x.toDouble(), y.toDouble(), z.toDouble())) {
             if (frameSyncConnector == null) { // legacy: update UI with the raw values
                 val (_x, _y, _z) = _frame.getAverages()
