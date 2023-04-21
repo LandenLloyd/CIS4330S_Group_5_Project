@@ -73,17 +73,19 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             Firebase.database("https://gesturements-default-rtdb.firebaseio.com").reference.child("data")
 
         // Create functions that can be used by our Sensor3DViewModels to write to Firebase
+        var accelRawWrite: ((Long, Double, Double, Double) -> Unit)? = null
         var readNumber = 0
-        val accelRawWrite: (Long, Double, Double, Double) -> Unit =
-            { t: Long, x: Double, y: Double, z: Double ->
-                val target =
-                    firebaseDatabaseReference.child("accel_raw").child(readNumber.toString())
-                readNumber++
-                target.child("t").setValue(t)
-                target.child("x").setValue(x)
-                target.child("y").setValue(y)
-                target.child("z").setValue(z)
-            }
+        // Uncomment the block below to upload accelerometer data to Firebase
+//        accelRawWrite =
+//            { t: Long, x: Double, y: Double, z: Double ->
+//                val target =
+//                    firebaseDatabaseReference.child("accel_raw").child(readNumber.toString())
+//                readNumber++
+//                target.child("t").setValue(t)
+//                target.child("x").setValue(x)
+//                target.child("y").setValue(y)
+//                target.child("z").setValue(z)
+//            }
 
         // Initialize the sensing pipeline
         frameSync = FrameSync { accelerometerFrame: SensorFrame, gyroscopeFrame: SensorFrame ->
