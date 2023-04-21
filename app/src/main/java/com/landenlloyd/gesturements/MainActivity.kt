@@ -65,40 +65,62 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         }
     }
 
-    private fun setUpSensor() {
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-
+    private fun initializeFirebase() {
         FirebaseApp.initializeApp(applicationContext)
         firebaseDatabaseReference =
             Firebase.database("https://gesturements-default-rtdb.firebaseio.com").reference.child("data")
+    }
 
-        // Create functions that can be used by our Sensor3DViewModels to write to Firebase
-        var accelRawWrite: ((Long, Double, Double, Double) -> Unit)? = null
-        var readNumber = 0
-        // Uncomment the block below to upload accelerometer data to Firebase
-//        accelRawWrite =
-//            { t: Long, x: Double, y: Double, z: Double ->
-//                val target =
-//                    firebaseDatabaseReference.child("accel_raw").child(readNumber.toString())
-//                readNumber++
-//                target.child("t").setValue(t)
-//                target.child("x").setValue(x)
-//                target.child("y").setValue(y)
-//                target.child("z").setValue(z)
-//            }
-
-        // Initialize the sensing pipeline
-        frameSync = FrameSync { accelerometerFrame: SensorFrame, gyroscopeFrame: SensorFrame ->
+    private fun getFrameSync(): FrameSync {
+        return FrameSync { accelerometerFrame: SensorFrame, gyroscopeFrame: SensorFrame ->
             Log.d("setUpSensor", "Frames were successfully synced")
 
             accelerometerViewModel.updateReadings(accelerometerFrame.getAverages())
             gyroscopeViewModel.updateReadings(gyroscopeFrame.getAverages())
-        }
 
+            val accelerometerPreprocessor = SensorFramePreprocessor(accelerometerFrame)
+            val gyroscopePreprocessor = SensorFramePreprocessor(gyroscopeFrame)
+        }
+    }
+
+    /**
+     * Create a function that can be used to easily upload sensor data to Firebase
+     * The Firebase write function is intended to take in time, x, y, and z.
+     * Ensure that initializeFirebase() is called before using the returned function.
+     *
+     * @param pathString the sub-path in the Firebase Realtime DB to write to
+     */
+    private fun getFirebaseWriteFunction(pathString: String): (Long, Double, Double, Double) -> Unit {
+        // Create functions that can be used by our Sensor3DViewModels to write to Firebase
+        var readNumber = 0
+        return { t: Long, x: Double, y: Double, z: Double ->
+            val target =
+                firebaseDatabaseReference.child(pathString).child(readNumber.toString())
+            readNumber++
+            target.child("t").setValue(t)
+            target.child("x").setValue(x)
+            target.child("y").setValue(y)
+            target.child("z").setValue(z)
+        }
+    }
+
+    private fun setUpSensor() {
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
+        initializeFirebase()
+
+        // Create functions that can be used by our Sensor3DViewModels to write to Firebase
+        val accelRawWrite = getFirebaseWriteFunction("accel_raw")
+        val gyroRawWrite = getFirebaseWriteFunction("gyro_raw")
+
+        // Initialize the sensing pipeline
+        frameSync = getFrameSync()
         accelerometerViewModel =
             Sensor3DViewModel(frameSyncConnector = frameSync.left, onWrite = accelRawWrite)
-        gyroscopeViewModel = Sensor3DViewModel(frameSyncConnector = frameSync.right)
+        gyroscopeViewModel = Sensor3DViewModel(frameSyncConnector = frameSync.right, onWrite = gyroRawWrite)
 
+        // Register this listener to the Linear Acceleration (Acceleration minus gravity)
+        // and the gyroscope
         sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)?.also {
             sensorManager.registerListener(
                 this,
