@@ -1,5 +1,6 @@
 package com.landenlloyd.gesturements
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -280,7 +281,12 @@ class FrameSync(val onSync: (SensorFrame, SensorFrame) -> Unit) {
 
             // If the max of the leftFrame is less than the min of the rightFrame, there's no overlap
             if (leftFrame.content.t[leftFrame.content.t.size - 1] < rightFrame.content.t[0]) {
-                throw IllegalArgumentException("trySync: leftFrame And rightFrame have no overlap")
+                Log.d("trySync", "leftFrame and rightFrame have no overlap: filling with zeroes")
+                leftFrame.content = SensorFrameContent(leftFrame.content.frameWidth)
+                rightFrame.content = SensorFrameContent(rightFrame.content.frameWidth)
+
+                onSync(leftFrame, rightFrame)
+                return
             }
 
             // Select the bounds for this frame
