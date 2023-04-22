@@ -1,5 +1,6 @@
 package com.landenlloyd.gesturements
 
+import com.github.psambit9791.jdsp.filter.Butterworth
 import com.github.psambit9791.jdsp.transform.DiscreteFourier
 import com.github.psambit9791.jdsp.transform._Fourier
 import com.google.firebase.database.DatabaseReference
@@ -67,6 +68,15 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
     }
 
     /**
+     * Calls `function` over each txyz pair wrapped by this Preprocessor
+     */
+    fun forEach(function: (Long, Double, Double, Double) -> Unit) {
+        for (index in _frame.content.t.indices) {
+            function(_frame.content.t[index].toLong(), _frame.content.x[index], _frame.content.y[index], _frame.content.z[index])
+        }
+    }
+
+    /**
      * For debugging purposes; simply generates the Fourier Transform of this frame
      * and uploads it to Firebase
      */
@@ -76,5 +86,19 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
         val (zFT, zFreqs) = wrapDiscreteFourier(_frame.content.z)
 
         freq3DToFirebase(entryNum, reference, pathString, xFT, xFreqs, yFT, yFreqs, zFT, zFreqs)
+    }
+
+    /**
+     * Applies a Butterworth low pass filter to the SensorFrame
+     *
+     * @param freqCap: all frequencies before this are discarded
+     * @param order: the order of the Butterworth filter
+     */
+    fun lowPassFilter(freqCap: Double, order: Int = 4) {
+        val filter = Butterworth(getFrameFrequency())
+        val newX = filter.lowPassFilter(_frame.content.x, order, freqCap)
+        val newY = filter.lowPassFilter(_frame.content.y, order, freqCap)
+        val newZ = filter.lowPassFilter(_frame.content.z, order, freqCap)
+        _frame.content = SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
     }
 }

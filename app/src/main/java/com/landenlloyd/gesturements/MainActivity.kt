@@ -43,7 +43,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var firebaseDatabaseReference: DatabaseReference
 
-    var preprocessEntryNum = 0
+    var accelPreprocessEntryNum = 0
+
+    lateinit var postLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,8 +82,19 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             val accelerometerPreprocessor = SensorFramePreprocessor(accelerometerFrame)
             val gyroscopePreprocessor = SensorFramePreprocessor(gyroscopeFrame)
 
-            accelerometerPreprocessor.fourierTransform(preprocessEntryNum, firebaseDatabaseReference, "accel_fft")
-            preprocessEntryNum++
+            // Get a baseline Fourier Transform to select parameters for filters
+            accelerometerPreprocessor.fourierTransform(
+                accelPreprocessEntryNum,
+                firebaseDatabaseReference,
+                "accel_fft"
+            )
+            accelPreprocessEntryNum++
+
+            // Apply low pass filter
+            accelerometerPreprocessor.lowPassFilter(10.0)
+
+            // Upload frame after low pass to Firebase
+            accelerometerPreprocessor.forEach(postLowPassWriteFunction)
         }
     }
 
@@ -114,12 +127,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         // Create functions that can be used by our Sensor3DViewModels to write to Firebase
         val accelRawWrite = getFirebaseWriteFunction("accel_raw")
         val gyroRawWrite = getFirebaseWriteFunction("gyro_raw")
+        postLowPassWriteFunction = getFirebaseWriteFunction("accel_post_low_pass")
 
         // Initialize the sensing pipeline
         frameSync = getFrameSync()
         accelerometerViewModel =
             Sensor3DViewModel(frameSyncConnector = frameSync.left, onWrite = accelRawWrite)
-        gyroscopeViewModel = Sensor3DViewModel(frameSyncConnector = frameSync.right, onWrite = gyroRawWrite)
+        gyroscopeViewModel =
+            Sensor3DViewModel(frameSyncConnector = frameSync.right, onWrite = gyroRawWrite)
 
         // Register this listener to the Linear Acceleration (Acceleration minus gravity)
         // and the gyroscope

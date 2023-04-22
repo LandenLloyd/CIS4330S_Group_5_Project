@@ -1,8 +1,9 @@
 # CIS4330S_Group_5_Project
 
 Developed By:
- - Landen Lloyd
- - Shayan Hussain
+
+- Landen Lloyd
+- Shayan Hussain
 
 For Dr. Wang's "Smart Sensing and Devices"
 
@@ -27,3 +28,10 @@ experience of playing an instrument. Our gesture-based app is cheaper than physi
 instruments, and the gesture interface is more engaging than a flat touchscreen. Similarly, some
 users may have more control over the sound using our gesture-based system than a
 touchscreen system.
+
+## Third-party Dependencies
+
+- [Apache Commons Math 4](https://commons.apache.org/proper/commons-math/): used for cubic spline
+  interpolation
+- [JDSP](https://github.com/psambit9791/jdsp): a digital signal processing library for Java. Used
+  for the Fourier transform and Butterworth low-pass filter
