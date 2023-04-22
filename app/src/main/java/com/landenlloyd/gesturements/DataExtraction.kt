@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.apache.commons.math4.legacy.analysis.UnivariateFunction
 import org.apache.commons.math4.legacy.analysis.interpolation.SplineInterpolator
 import org.apache.commons.math4.legacy.analysis.interpolation.UnivariateInterpolator
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 class OverlapValueException(overlap: Float) :
@@ -273,7 +275,30 @@ class FrameSync(val onSync: (SensorFrame, SensorFrame) -> Unit) {
         }
 
         if (leftFrame != null && rightFrame != null) {
-            leftFrame.syncToTime(rightFrame.content.t)
+            // NOTE: we assume that both frames are "full"; their component array sizes
+            // equals the frameSize
+
+            // If the max of the leftFrame is less than the min of the rightFrame, there's no overlap
+            if (leftFrame.content.t[leftFrame.content.t.size - 1] < rightFrame.content.t[0]) {
+                throw IllegalArgumentException("trySync: leftFrame And rightFrame have no overlap")
+            }
+
+            // Select the bounds for this frame
+            val minT = max(leftFrame.content.t[0], rightFrame.content.t[0])
+            val maxT = min(
+                leftFrame.content.t[leftFrame.content.t.size - 1],
+                rightFrame.content.t[rightFrame.content.t.size - 1]
+            )
+
+            // Create an evenly spaced interval
+            val stepSize = (maxT - minT) / (leftFrame.content.frameWidth - 1)
+            val newT =
+                DoubleArray(leftFrame.content.frameWidth) { index -> minT + index * stepSize }
+
+            // Sync both frames to the new time stamps
+            leftFrame.syncToTime(newT)
+            rightFrame.syncToTime(newT)
+
             onSync(leftFrame, rightFrame)
         }
     }

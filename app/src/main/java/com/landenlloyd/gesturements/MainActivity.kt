@@ -233,7 +233,7 @@ private fun testBing() {
 
     // Sleep while the sound is generated in the background.
     try {
-        val time: Double = synth.getCurrentTime()
+        val time: Double = synth.currentTime
         // Sleep for a few seconds.
         synth.sleepUntil(time + 4.0)
     } catch (e: InterruptedException) {
