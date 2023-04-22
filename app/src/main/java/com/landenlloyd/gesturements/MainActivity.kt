@@ -6,6 +6,8 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
+import android.widget.SeekBar
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -31,6 +33,7 @@ import com.landenlloyd.gesturements.android.JSynAndroidAudioDevice
 import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 
 
+
 class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
@@ -38,10 +41,12 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private lateinit var gyroscopeViewModel: Sensor3DViewModel
     private lateinit var frameSync: FrameSync
 
-//    private lateinit var firebaseDatabaseReference: DatabaseReference
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
 
         setUpSensor()
 
@@ -192,6 +197,7 @@ private fun testBing() {
     // Stop everything.
     synth.stop()
 }
+
 
 @Composable
 fun TitleColumn(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> Unit = {}) {
