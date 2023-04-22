@@ -43,6 +43,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private lateinit var firebaseDatabaseReference: DatabaseReference
 
+    var preprocessEntryNum = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -77,6 +79,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
             val accelerometerPreprocessor = SensorFramePreprocessor(accelerometerFrame)
             val gyroscopePreprocessor = SensorFramePreprocessor(gyroscopeFrame)
+
+            accelerometerPreprocessor.fourierTransform(preprocessEntryNum, firebaseDatabaseReference, "accel_fft")
+            preprocessEntryNum++
         }
     }
 
