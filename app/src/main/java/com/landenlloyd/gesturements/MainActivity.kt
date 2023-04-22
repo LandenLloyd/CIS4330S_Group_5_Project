@@ -5,7 +5,6 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -73,8 +72,6 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private fun getFrameSync(): FrameSync {
         return FrameSync { accelerometerFrame: SensorFrame, gyroscopeFrame: SensorFrame ->
-            Log.d("setUpSensor", "Frames were successfully synced")
-
             accelerometerViewModel.updateReadings(accelerometerFrame.getAverages())
             gyroscopeViewModel.updateReadings(gyroscopeFrame.getAverages())
 
