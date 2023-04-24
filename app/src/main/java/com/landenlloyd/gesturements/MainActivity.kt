@@ -5,6 +5,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -36,18 +37,19 @@ import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 
 class MainActivity : ComponentActivity(), SensorEventListener {
 
-    private lateinit var sensorManager: SensorManager
+    private var sensorManager: SensorManager? = null
+    private var sensorManagerEnabled = false
     private lateinit var accelerometerViewModel: Sensor3DViewModel
     private lateinit var gyroscopeViewModel: Sensor3DViewModel
     private lateinit var frameSync: FrameSync
 
     private lateinit var firebaseDatabaseReference: DatabaseReference
 
-    var accelPreprocessEntryNum = 0
-    var gyroPreprocessEntryNum = 0
+    private var accelPreprocessEntryNum = 0
+    private var gyroPreprocessEntryNum = 0
 
-    lateinit var accelPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
-    lateinit var accelPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
+    private lateinit var accelPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
+    private lateinit var accelPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
 
     lateinit var gyroPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
     lateinit var gyroPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
@@ -66,7 +68,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                 ) {
                     GesturementsApp(
                         accelerometerViewModel = accelerometerViewModel,
-                        gyroscopeViewModel = gyroscopeViewModel
+                        gyroscopeViewModel = gyroscopeViewModel,
+                        detachListener = { this.unRegisterListener() }
                     )
                 }
             }
@@ -144,6 +147,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private fun setUpSensor() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        sensorManagerEnabled = true
 
         initializeFirebase()
 
@@ -164,8 +168,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
         // Register this listener to the Linear Acceleration (Acceleration minus gravity)
         // and the gyroscope
-        sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)?.also {
-            sensorManager.registerListener(
+        sensorManager?.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)?.also {
+            sensorManager?.registerListener(
                 this,
                 it,
                 SensorManager.SENSOR_DELAY_GAME,
@@ -173,8 +177,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             )
         }
 
-        sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)?.also {
-            sensorManager.registerListener(
+        sensorManager?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)?.also {
+            sensorManager?.registerListener(
                 this,
                 it,
                 SensorManager.SENSOR_DELAY_GAME,
@@ -184,20 +188,24 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION) {
-            accelerometerViewModel.appendReadings(
-                event.timestamp,
-                event.values[0],
-                event.values[1],
-                event.values[2]
-            )
-        } else if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
-            gyroscopeViewModel.appendReadings(
-                event.timestamp,
-                event.values[0],
-                event.values[1],
-                event.values[2]
-            )
+        if (sensorManagerEnabled) {
+            Log.d("onSensorChanged", "Sensor received an event!")
+
+            if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION) {
+                accelerometerViewModel.appendReadings(
+                    event.timestamp,
+                    event.values[0],
+                    event.values[1],
+                    event.values[2]
+                )
+            } else if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
+                gyroscopeViewModel.appendReadings(
+                    event.timestamp,
+                    event.values[0],
+                    event.values[1],
+                    event.values[2]
+                )
+            }
         }
     }
 
@@ -205,8 +213,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         return
     }
 
+    private fun unRegisterListener() {
+        sensorManager?.unregisterListener(this)
+        sensorManager = null
+        sensorManagerEnabled = false
+    }
+
     override fun onDestroy() {
-        sensorManager.unregisterListener(this)
+        unRegisterListener()
         super.onDestroy()
     }
 }
@@ -291,7 +305,11 @@ private fun testBing() {
 }
 
 @Composable
-fun TitleColumn(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> Unit = {}) {
+fun TitleColumn(
+    modifier: Modifier = Modifier,
+    onInstrumentButtonClicked: () -> Unit = {},
+    detachListener: () -> Unit = {}
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -311,11 +329,28 @@ fun TitleColumn(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> 
                 text = "Bing"
             )
         }
+        // It is helpful to have a button to detach listeners, allowing the network to catch up
+        Button(
+            onClick = detachListener,
+            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
+            shape = RoundedCornerShape(8.dp),
+            elevation = ButtonDefaults.elevation(8.dp),
+            modifier = modifier.wrapContentSize(align = Alignment.Center)
+        ) {
+            Text(
+                modifier = Modifier.padding(8.dp),
+                text = "Stop Sensing"
+            )
+        }
     }
 }
 
 @Composable
-fun TitleScreen(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> Unit = {}) {
+fun TitleScreen(
+    modifier: Modifier = Modifier,
+    onInstrumentButtonClicked: () -> Unit = {},
+    detachListener: () -> Unit = {}
+) {
     val image = painterResource(id = R.drawable.instrument)
 
     Box(modifier = modifier) {
@@ -336,7 +371,8 @@ fun TitleScreen(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> 
 fun GesturementsApp(
     modifier: Modifier = Modifier,
     accelerometerViewModel: Sensor3DViewModel,
-    gyroscopeViewModel: Sensor3DViewModel
+    gyroscopeViewModel: Sensor3DViewModel,
+    detachListener: () -> Unit = {}
 ) {
     val navController = rememberNavController()
 
@@ -351,7 +387,7 @@ fun GesturementsApp(
                     navController.navigate(
                         GesturementsScreen.Instrument.name
                     )
-                })
+                }, detachListener = detachListener)
             }
 
             composable(route = GesturementsScreen.Instrument.name) {
