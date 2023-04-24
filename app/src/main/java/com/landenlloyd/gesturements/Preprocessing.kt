@@ -1,6 +1,7 @@
 package com.landenlloyd.gesturements
 
 import com.github.psambit9791.jdsp.filter.Butterworth
+import com.github.psambit9791.jdsp.signal.Smooth
 import com.github.psambit9791.jdsp.transform.DiscreteFourier
 import com.github.psambit9791.jdsp.transform._Fourier
 import com.google.firebase.database.DatabaseReference
@@ -15,7 +16,7 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
         val minT = _frame.content.t[0]
         val maxT = _frame.content.t[_frame.content.t.size - 1]
         val intervalLength = maxT - minT
-        val freqNs =  _frame.content.frameWidth / intervalLength // Samples / nanosecond
+        val freqNs = _frame.content.frameWidth / intervalLength // Samples / nanosecond
         return freqNs * 1000000000
     }
 
@@ -72,7 +73,12 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
      */
     fun forEach(function: (Long, Double, Double, Double) -> Unit) {
         for (index in _frame.content.t.indices) {
-            function(_frame.content.t[index].toLong(), _frame.content.x[index], _frame.content.y[index], _frame.content.z[index])
+            function(
+                _frame.content.t[index].toLong(),
+                _frame.content.x[index],
+                _frame.content.y[index],
+                _frame.content.z[index]
+            )
         }
     }
 
@@ -99,6 +105,26 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
         val newX = filter.lowPassFilter(_frame.content.x, order, freqCap)
         val newY = filter.lowPassFilter(_frame.content.y, order, freqCap)
         val newZ = filter.lowPassFilter(_frame.content.z, order, freqCap)
-        _frame.content = SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
+        _frame.content =
+            SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
+    }
+
+    /**
+     * Uses JDSP's smoothing function, which is a moving average, to smooth the SensorFrame.
+     *
+     * @param windowSize the size of the sliding window; in other words, the number of samples
+     * that are factored into each moving average calculation.
+     * @param mode "rectangular" slides a window over the data, calculating a simple moving average,
+     * or "triangular" which performs the "rectangular" operation twice for more smoothing.
+     */
+    fun smoothByMovingAverage(windowSize: Int = 8, mode: String = "rectangular") {
+        val xSmooth = Smooth(_frame.content.x, windowSize, mode)
+        val newX = xSmooth.smoothSignal()
+        val ySmooth = Smooth(_frame.content.y, windowSize, mode)
+        val newY = ySmooth.smoothSignal()
+        val zSmooth = Smooth(_frame.content.z, windowSize, mode)
+        val newZ = zSmooth.smoothSignal()
+        _frame.content =
+            SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
     }
 }

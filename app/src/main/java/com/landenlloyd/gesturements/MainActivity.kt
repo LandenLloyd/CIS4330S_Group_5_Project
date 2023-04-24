@@ -45,7 +45,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     var accelPreprocessEntryNum = 0
 
-    lateinit var postLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
+    lateinit var accelPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
+    lateinit var accelPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,9 +93,11 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
             // Apply low pass filter
             accelerometerPreprocessor.lowPassFilter(10.0)
+            accelerometerPreprocessor.forEach(accelPostLowPassWriteFunction)
 
-            // Upload frame after low pass to Firebase
-            accelerometerPreprocessor.forEach(postLowPassWriteFunction)
+            // Apply moving average smoothing
+            accelerometerPreprocessor.smoothByMovingAverage()
+            accelerometerPreprocessor.forEach(accelPostSmoothWriteFunction)
         }
     }
 
@@ -127,7 +130,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         // Create functions that can be used by our Sensor3DViewModels to write to Firebase
         val accelRawWrite = getFirebaseWriteFunction("accel_raw")
         val gyroRawWrite = getFirebaseWriteFunction("gyro_raw")
-        postLowPassWriteFunction = getFirebaseWriteFunction("accel_post_low_pass")
+        accelPostLowPassWriteFunction = getFirebaseWriteFunction("accel_post_low_pass")
+        accelPostSmoothWriteFunction = getFirebaseWriteFunction("accel_post_smooth")
 
         // Initialize the sensing pipeline
         frameSync = getFrameSync()
