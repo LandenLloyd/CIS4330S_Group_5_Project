@@ -44,9 +44,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private lateinit var firebaseDatabaseReference: DatabaseReference
 
     var accelPreprocessEntryNum = 0
+    var gyroPreprocessEntryNum = 0
 
     lateinit var accelPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
     lateinit var accelPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
+
+    lateinit var gyroPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
+    lateinit var gyroPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,6 +102,22 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             // Apply moving average smoothing
             accelerometerPreprocessor.smoothByMovingAverage()
             accelerometerPreprocessor.forEach(accelPostSmoothWriteFunction)
+
+            // Get a baseline Fourier Transform to select parameters for filters
+            gyroscopePreprocessor.fourierTransform(
+                gyroPreprocessEntryNum,
+                firebaseDatabaseReference,
+                "gyro_fft"
+            )
+            gyroPreprocessEntryNum++
+
+            // Apply low pass filter
+            gyroscopePreprocessor.lowPassFilter(10.0)
+            gyroscopePreprocessor.forEach(gyroPostLowPassWriteFunction)
+
+            // Apply moving average smoothing
+            gyroscopePreprocessor.smoothByMovingAverage()
+            gyroscopePreprocessor.forEach(gyroPostSmoothWriteFunction)
         }
     }
 
@@ -132,6 +152,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         val gyroRawWrite = getFirebaseWriteFunction("gyro_raw")
         accelPostLowPassWriteFunction = getFirebaseWriteFunction("accel_post_low_pass")
         accelPostSmoothWriteFunction = getFirebaseWriteFunction("accel_post_smooth")
+        gyroPostLowPassWriteFunction = getFirebaseWriteFunction("gyro_post_low_pass")
+        gyroPostSmoothWriteFunction = getFirebaseWriteFunction("gyro_post_smooth")
 
         // Initialize the sensing pipeline
         frameSync = getFrameSync()

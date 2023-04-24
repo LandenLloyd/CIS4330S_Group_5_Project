@@ -117,14 +117,20 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
      * @param mode "rectangular" slides a window over the data, calculating a simple moving average,
      * or "triangular" which performs the "rectangular" operation twice for more smoothing.
      */
-    fun smoothByMovingAverage(windowSize: Int = 8, mode: String = "rectangular") {
+    fun smoothByMovingAverage(windowSize: Int = 7, mode: String = "rectangular") {
         val xSmooth = Smooth(_frame.content.x, windowSize, mode)
         val newX = xSmooth.smoothSignal()
         val ySmooth = Smooth(_frame.content.y, windowSize, mode)
         val newY = ySmooth.smoothSignal()
         val zSmooth = Smooth(_frame.content.z, windowSize, mode)
         val newZ = zSmooth.smoothSignal()
+
+        // In taking a moving average, the num of samples is reduced, so we cut down edge timestamps
+        val newSampleCount = newX.size
+        val newT = _frame.content.t.take((_frame.content.frameWidth + newSampleCount) / 2)
+            .takeLast(newSampleCount).toDoubleArray()
+
         _frame.content =
-            SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
+            SensorFrameContent(newSampleCount, newT, newX, newY, newZ)
     }
 }
