@@ -1,5 +1,6 @@
 package com.landenlloyd.gesturements
 
+import android.util.Log
 import com.github.psambit9791.jdsp.filter.Butterworth
 import com.github.psambit9791.jdsp.signal.Smooth
 import com.github.psambit9791.jdsp.transform.DiscreteFourier
@@ -17,6 +18,7 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
         val maxT = _frame.content.t[_frame.content.t.size - 1]
         val intervalLength = maxT - minT
         val freqNs = _frame.content.frameWidth / intervalLength // Samples / nanosecond
+        Log.d("timing", "time between each sample: ${1/freqNs}")
         return freqNs * 1000000000
     }
 
@@ -97,7 +99,7 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
     /**
      * Applies a Butterworth low pass filter to the SensorFrame
      *
-     * @param freqCap: all frequencies before this are discarded
+     * @param freqCap: all frequencies above this are discarded
      * @param order: the order of the Butterworth filter
      */
     fun lowPassFilter(freqCap: Double, order: Int = 4) {
@@ -105,6 +107,37 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
         val newX = filter.lowPassFilter(_frame.content.x, order, freqCap)
         val newY = filter.lowPassFilter(_frame.content.y, order, freqCap)
         val newZ = filter.lowPassFilter(_frame.content.z, order, freqCap)
+        _frame.content =
+            SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
+    }
+
+    /**
+     * Applies a Butterworth low pass filter to the SensorFrame
+     *
+     * @param freqMin: all frequencies below this are discarded
+     * @param order: the order of the Butterworth filter
+     */
+    fun highPassFilter(freqMin: Double, order: Int = 4) {
+        val filter = Butterworth(getFrameFrequency())
+        val newX = filter.highPassFilter(_frame.content.x, order, freqMin)
+        val newY = filter.highPassFilter(_frame.content.y, order, freqMin)
+        val newZ = filter.highPassFilter(_frame.content.z, order, freqMin)
+        _frame.content =
+            SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
+    }
+
+    /**
+     * Applies a Butterworth band pass filter to the SensorFrame
+     *
+     * @param freqMin: all frequencies below this are discarded
+     * @param freqCap: all frequencies above this are discarded
+     * @param order: the order of the Butterworth filter
+     */
+    fun bandPassFilter(freqMin: Double, freqCap: Double, order: Int = 4) {
+        val filter = Butterworth(getFrameFrequency())
+        val newX = filter.bandPassFilter(_frame.content.x, order, freqMin, freqCap)
+        val newY = filter.bandPassFilter(_frame.content.y, order, freqMin, freqCap)
+        val newZ = filter.bandPassFilter(_frame.content.z, order, freqMin, freqCap)
         _frame.content =
             SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
     }

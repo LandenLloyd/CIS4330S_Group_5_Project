@@ -33,6 +33,7 @@ import com.jsyn.unitgen.LineOut
 import com.jsyn.unitgen.SineOscillator
 import com.landenlloyd.gesturements.android.JSynAndroidAudioDevice
 import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
+import kotlin.system.measureNanoTime
 
 
 class MainActivity : ComponentActivity(), SensorEventListener {
@@ -48,11 +49,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private var accelPreprocessEntryNum = 0
     private var gyroPreprocessEntryNum = 0
 
+    // NOTE: originally, I was using a low-pass filter for the accelerometer. Rather than
+    // renaming all variables from "LowPass" to just "Filter", I left the names stand.
     private lateinit var accelPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
     private lateinit var accelPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
 
-    lateinit var gyroPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
-    lateinit var gyroPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
+    private lateinit var gyroPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
+    private lateinit var gyroPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,8 +101,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             )
             accelPreprocessEntryNum++
 
-            // Apply low pass filter
-            accelerometerPreprocessor.lowPassFilter(10.0)
+            // Apply filters
+            accelerometerPreprocessor.highPassFilter(5.0)
             accelerometerPreprocessor.forEach(accelPostLowPassWriteFunction)
 
             // Apply moving average smoothing
@@ -189,23 +192,25 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (sensorManagerEnabled) {
-            Log.d("onSensorChanged", "Sensor received an event!")
-
-            if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION) {
-                accelerometerViewModel.appendReadings(
-                    event.timestamp,
-                    event.values[0],
-                    event.values[1],
-                    event.values[2]
-                )
-            } else if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
-                gyroscopeViewModel.appendReadings(
-                    event.timestamp,
-                    event.values[0],
-                    event.values[1],
-                    event.values[2]
-                )
+            val eventProcessingDuration = measureNanoTime {
+                if (event?.sensor?.type == Sensor.TYPE_LINEAR_ACCELERATION) {
+                    accelerometerViewModel.appendReadings(
+                        event.timestamp,
+                        event.values[0],
+                        event.values[1],
+                        event.values[2]
+                    )
+                } else if (event?.sensor?.type == Sensor.TYPE_GYROSCOPE) {
+                    gyroscopeViewModel.appendReadings(
+                        event.timestamp,
+                        event.values[0],
+                        event.values[1],
+                        event.values[2]
+                    )
+                }
             }
+
+            Log.d("timing", eventProcessingDuration.toString())
         }
     }
 
@@ -363,7 +368,10 @@ fun TitleScreen(
             contentScale = ContentScale.FillWidth,
             alpha = 0.75f
         )
-        TitleColumn(onInstrumentButtonClicked = onInstrumentButtonClicked)
+        TitleColumn(
+            onInstrumentButtonClicked = onInstrumentButtonClicked,
+            detachListener = detachListener
+        )
     }
 }
 
