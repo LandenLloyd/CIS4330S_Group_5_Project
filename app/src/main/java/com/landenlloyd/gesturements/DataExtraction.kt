@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.apache.commons.math4.legacy.analysis.UnivariateFunction
 import org.apache.commons.math4.legacy.analysis.interpolation.SplineInterpolator
 import org.apache.commons.math4.legacy.analysis.interpolation.UnivariateInterpolator
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -54,6 +55,10 @@ class Sensor3DViewModel(
      * @param z the z-coordinate for a sensor reading
      */
     fun appendReadings(t: Long, x: Float, y: Float, z: Float) {
+        // If we are waiting on the go-ahead from FrameSync, ignore this reading
+        val acceptReadings = frameSyncConnector?.acceptReadings?.get()
+        if (acceptReadings != null && !acceptReadings) return
+
         onWrite?.invoke(t, x.toDouble(), y.toDouble(), z.toDouble())
 
         if (_frame.updateReadings(t.toDouble(), x.toDouble(), y.toDouble(), z.toDouble())) {
@@ -243,6 +248,8 @@ class FrameSync(val onSync: (SensorFrame, SensorFrame) -> Unit) {
     private var numValidFrames = 0
 
     class FrameSyncConnector(private val frameSync: FrameSync) {
+        var acceptReadings = AtomicBoolean(true)
+
         var frame: SensorFrame? = null
             set(value) {
                 if (value != null) {
@@ -250,6 +257,8 @@ class FrameSync(val onSync: (SensorFrame, SensorFrame) -> Unit) {
                         field = value
                         frameSync.numValidFrames += 1
                     }
+
+                    acceptReadings.set(false)
                     frameSync.trySync()
                 } else {
                     field = null
@@ -278,6 +287,10 @@ class FrameSync(val onSync: (SensorFrame, SensorFrame) -> Unit) {
         if (leftFrame != null && rightFrame != null) {
             // NOTE: we assume that both frames are "full"; their component array sizes
             // equals the frameSize
+
+            // Allow frames to continue accepting readings
+            left.acceptReadings.set(true)
+            right.acceptReadings.set(true)
 
             // If the max of the leftFrame is less than the min of the rightFrame, there's no overlap
             if (leftFrame.content.t[leftFrame.content.t.size - 1] < rightFrame.content.t[0]) {
