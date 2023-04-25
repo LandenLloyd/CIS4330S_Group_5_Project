@@ -51,7 +51,7 @@ DataExtraction.kt, Preprocessing.kt, FeatureExtraction.kt, Classification.kt.
 ## Third-party Dependencies
 
 - [Apache Commons Math 4](https://commons.apache.org/proper/commons-math/): used for cubic spline
-  interpolation
+  interpolation and descriptive statistic calculation
 - [JDSP](https://github.com/psambit9791/jdsp): a digital signal processing library for Java. Used
   for the Fourier transform and Butterworth low-pass filter
 - [JSyn](https://github.com/philburk/jsyn): an audio synthesizer library for Java.

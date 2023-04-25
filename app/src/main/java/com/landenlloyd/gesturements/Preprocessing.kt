@@ -9,16 +9,23 @@ import com.google.firebase.database.DatabaseReference
 import kotlin.math.roundToInt
 
 
-class SensorFramePreprocessor(private var _frame: SensorFrame) {
+class SensorFramePreprocessor(
+    var frame: SensorFrame,
+    private val displayTimingInformation: Boolean = false
+) {
     /**
      * Returns the sampling frequency of this fixed time interval is Hertz (sample / second)
      */
     private fun getFrameFrequency(): Double {
-        val minT = _frame.content.t[0]
-        val maxT = _frame.content.t[_frame.content.t.size - 1]
+        val minT = frame.content.t[0]
+        val maxT = frame.content.t[frame.content.t.size - 1]
         val intervalLength = maxT - minT
-        val freqNs = _frame.content.frameWidth / intervalLength // Samples / nanosecond
-        Log.d("timing", "time between each sample: ${1/freqNs}")
+        val freqNs = frame.content.frameWidth / intervalLength // Samples / nanosecond
+
+        if (displayTimingInformation) {
+            Log.d("timing", "time between each sample: ${1 / freqNs}")
+        }
+
         return freqNs * 1000000000
     }
 
@@ -74,12 +81,12 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
      * Calls `function` over each txyz pair wrapped by this Preprocessor
      */
     fun forEach(function: (Long, Double, Double, Double) -> Unit) {
-        for (index in _frame.content.t.indices) {
+        for (index in frame.content.t.indices) {
             function(
-                _frame.content.t[index].toLong(),
-                _frame.content.x[index],
-                _frame.content.y[index],
-                _frame.content.z[index]
+                frame.content.t[index].toLong(),
+                frame.content.x[index],
+                frame.content.y[index],
+                frame.content.z[index]
             )
         }
     }
@@ -89,9 +96,9 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
      * and uploads it to Firebase
      */
     fun fourierTransform(entryNum: Int, reference: DatabaseReference, pathString: String) {
-        val (xFT, xFreqs) = wrapDiscreteFourier(_frame.content.x)
-        val (yFT, yFreqs) = wrapDiscreteFourier(_frame.content.y)
-        val (zFT, zFreqs) = wrapDiscreteFourier(_frame.content.z)
+        val (xFT, xFreqs) = wrapDiscreteFourier(frame.content.x)
+        val (yFT, yFreqs) = wrapDiscreteFourier(frame.content.y)
+        val (zFT, zFreqs) = wrapDiscreteFourier(frame.content.z)
 
         freq3DToFirebase(entryNum, reference, pathString, xFT, xFreqs, yFT, yFreqs, zFT, zFreqs)
     }
@@ -104,11 +111,11 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
      */
     fun lowPassFilter(freqCap: Double, order: Int = 4) {
         val filter = Butterworth(getFrameFrequency())
-        val newX = filter.lowPassFilter(_frame.content.x, order, freqCap)
-        val newY = filter.lowPassFilter(_frame.content.y, order, freqCap)
-        val newZ = filter.lowPassFilter(_frame.content.z, order, freqCap)
-        _frame.content =
-            SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
+        val newX = filter.lowPassFilter(frame.content.x, order, freqCap)
+        val newY = filter.lowPassFilter(frame.content.y, order, freqCap)
+        val newZ = filter.lowPassFilter(frame.content.z, order, freqCap)
+        frame.content =
+            SensorFrameContent(frame.content.frameWidth, frame.content.t, newX, newY, newZ)
     }
 
     /**
@@ -119,11 +126,11 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
      */
     fun highPassFilter(freqMin: Double, order: Int = 4) {
         val filter = Butterworth(getFrameFrequency())
-        val newX = filter.highPassFilter(_frame.content.x, order, freqMin)
-        val newY = filter.highPassFilter(_frame.content.y, order, freqMin)
-        val newZ = filter.highPassFilter(_frame.content.z, order, freqMin)
-        _frame.content =
-            SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
+        val newX = filter.highPassFilter(frame.content.x, order, freqMin)
+        val newY = filter.highPassFilter(frame.content.y, order, freqMin)
+        val newZ = filter.highPassFilter(frame.content.z, order, freqMin)
+        frame.content =
+            SensorFrameContent(frame.content.frameWidth, frame.content.t, newX, newY, newZ)
     }
 
     /**
@@ -135,11 +142,11 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
      */
     fun bandPassFilter(freqMin: Double, freqCap: Double, order: Int = 4) {
         val filter = Butterworth(getFrameFrequency())
-        val newX = filter.bandPassFilter(_frame.content.x, order, freqMin, freqCap)
-        val newY = filter.bandPassFilter(_frame.content.y, order, freqMin, freqCap)
-        val newZ = filter.bandPassFilter(_frame.content.z, order, freqMin, freqCap)
-        _frame.content =
-            SensorFrameContent(_frame.content.frameWidth, _frame.content.t, newX, newY, newZ)
+        val newX = filter.bandPassFilter(frame.content.x, order, freqMin, freqCap)
+        val newY = filter.bandPassFilter(frame.content.y, order, freqMin, freqCap)
+        val newZ = filter.bandPassFilter(frame.content.z, order, freqMin, freqCap)
+        frame.content =
+            SensorFrameContent(frame.content.frameWidth, frame.content.t, newX, newY, newZ)
     }
 
     /**
@@ -151,19 +158,19 @@ class SensorFramePreprocessor(private var _frame: SensorFrame) {
      * or "triangular" which performs the "rectangular" operation twice for more smoothing.
      */
     fun smoothByMovingAverage(windowSize: Int = 7, mode: String = "rectangular") {
-        val xSmooth = Smooth(_frame.content.x, windowSize, mode)
+        val xSmooth = Smooth(frame.content.x, windowSize, mode)
         val newX = xSmooth.smoothSignal()
-        val ySmooth = Smooth(_frame.content.y, windowSize, mode)
+        val ySmooth = Smooth(frame.content.y, windowSize, mode)
         val newY = ySmooth.smoothSignal()
-        val zSmooth = Smooth(_frame.content.z, windowSize, mode)
+        val zSmooth = Smooth(frame.content.z, windowSize, mode)
         val newZ = zSmooth.smoothSignal()
 
         // In taking a moving average, the num of samples is reduced, so we cut down edge timestamps
         val newSampleCount = newX.size
-        val newT = _frame.content.t.take((_frame.content.frameWidth + newSampleCount) / 2)
+        val newT = frame.content.t.take((frame.content.frameWidth + newSampleCount) / 2)
             .takeLast(newSampleCount).toDoubleArray()
 
-        _frame.content =
+        frame.content =
             SensorFrameContent(newSampleCount, newT, newX, newY, newZ)
     }
 }

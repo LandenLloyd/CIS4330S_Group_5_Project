@@ -37,6 +37,8 @@ import kotlin.system.measureNanoTime
 
 
 class MainActivity : ComponentActivity(), SensorEventListener {
+    // CONFIGURATION OPTIONS
+    private var displayTimingInformation = false
 
     private var sensorManager: SensorManager? = null
     private var sensorManagerEnabled = false
@@ -90,8 +92,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             accelerometerViewModel.updateReadings(accelerometerFrame.getAverages())
             gyroscopeViewModel.updateReadings(gyroscopeFrame.getAverages())
 
-            val accelerometerPreprocessor = SensorFramePreprocessor(accelerometerFrame)
-            val gyroscopePreprocessor = SensorFramePreprocessor(gyroscopeFrame)
+            val accelerometerPreprocessor = SensorFramePreprocessor(
+                accelerometerFrame,
+                displayTimingInformation = displayTimingInformation
+            )
+            val gyroscopePreprocessor = SensorFramePreprocessor(
+                gyroscopeFrame,
+                displayTimingInformation = displayTimingInformation
+            )
 
             // Get a baseline Fourier Transform to select parameters for filters
             accelerometerPreprocessor.fourierTransform(
@@ -124,6 +132,12 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             // Apply moving average smoothing
             gyroscopePreprocessor.smoothByMovingAverage()
             gyroscopePreprocessor.forEach(gyroPostSmoothWriteFunction)
+
+            // Extract features
+            val accelFeatures = FrameFeatureExtractor(accelerometerPreprocessor.frame)
+            Log.d("accelFeatures", accelFeatures.summarize())
+            val gyroFeatures = FrameFeatureExtractor(gyroscopePreprocessor.frame)
+            Log.d("gyroFeatures", gyroFeatures.summarize())
         }
     }
 
@@ -210,7 +224,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                 }
             }
 
-            Log.d("timing", eventProcessingDuration.toString())
+            if (displayTimingInformation) {
+                Log.d("timing", eventProcessingDuration.toString())
+            }
         }
     }
 
