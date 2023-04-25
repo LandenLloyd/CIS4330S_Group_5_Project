@@ -1,13 +1,13 @@
 package com.landenlloyd.gesturements
 
+import android.content.Context
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
-import android.widget.SeekBar
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -250,7 +251,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 }
 
 enum class GesturementsScreen {
-    Title, Instrument, Slider
+    Title, Instrument
 }
 
 @Composable
@@ -423,6 +424,7 @@ fun GesturementsApp(
     detachListener: () -> Unit = {}
 ) {
     val navController = rememberNavController()
+    val context = LocalContext.current
 
     Scaffold {
         NavHost(
@@ -436,7 +438,7 @@ fun GesturementsApp(
                         GesturementsScreen.Instrument.name
                     )
                 }, onSliderButtonClicked = {
-                    navController.navigate(GesturementsScreen.Slider.name)
+                    navigateToSynthSlider(context)
                 }, detachListener = detachListener)
             }
 
@@ -446,11 +448,13 @@ fun GesturementsApp(
                     gyroscopeViewModel = gyroscopeViewModel
                 )
             }
-            composable(route = GesturementsScreen.Slider.name) {
-                SliderTestActivity()
-            }
         }
     }
+}
+
+fun navigateToSynthSlider(context: Context) {
+    val intent = Intent(context, SliderTestActivity::class.java)
+    context.startActivity(intent)
 }
 
 @Preview(showBackground = true)
