@@ -2,4 +2,5 @@
     <string name="app_name">Gesturements</string>
     <string name="instrument_button_text">Instrument</string>
     <string name="instrument_reading_title">Instrument Readings</string>
+    <string name="slider_button_text">Go To Slider</string>
 </resources>

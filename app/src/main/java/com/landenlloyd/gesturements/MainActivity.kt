@@ -38,10 +38,10 @@ import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 import kotlin.system.measureNanoTime
 
 
-
 class MainActivity : ComponentActivity(), SensorEventListener {
     // CONFIGURATION OPTIONS
     private var displayTimingInformation = false
+    private var displayStatistics = false
 
     private var sensorManager: SensorManager? = null
     private var sensorManagerEnabled = false
@@ -138,9 +138,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
             // Extract features
             val accelFeatures = FrameFeatureExtractor(accelerometerPreprocessor.frame)
-            Log.d("accelFeatures", accelFeatures.summarize())
+            if (displayStatistics) Log.d("accelFeatures", accelFeatures.summarize())
             val gyroFeatures = FrameFeatureExtractor(gyroscopePreprocessor.frame)
-            Log.d("gyroFeatures", gyroFeatures.summarize())
+            if (displayStatistics) Log.d("gyroFeatures", gyroFeatures.summarize())
         }
     }
 
@@ -250,7 +250,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 }
 
 enum class GesturementsScreen {
-    Title, Instrument
+    Title, Instrument, Slider
 }
 
 @Composable
@@ -282,6 +282,22 @@ fun InstrumentButton(modifier: Modifier = Modifier, onInstrumentButtonClicked: (
         Text(
             modifier = Modifier.padding(8.dp),
             text = stringResource(id = R.string.instrument_button_text)
+        )
+    }
+}
+
+@Composable
+fun SliderButton(modifier: Modifier = Modifier, onSliderButtonClicked: () -> Unit = {}) {
+    Button(
+        onClick = { onSliderButtonClicked() },
+        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
+        shape = RoundedCornerShape(8.dp),
+        elevation = ButtonDefaults.elevation(8.dp),
+        modifier = modifier.wrapContentSize(align = Alignment.Center)
+    ) {
+        Text(
+            modifier = Modifier.padding(8.dp),
+            text = stringResource(id = R.string.slider_button_text)
         )
     }
 }
@@ -333,6 +349,7 @@ private fun testBing() {
 fun TitleColumn(
     modifier: Modifier = Modifier,
     onInstrumentButtonClicked: () -> Unit = {},
+    onSliderButtonClicked: () -> Unit = {},
     detachListener: () -> Unit = {}
 ) {
     Column(
@@ -342,6 +359,7 @@ fun TitleColumn(
     ) {
         TitleText()
         InstrumentButton(onInstrumentButtonClicked = onInstrumentButtonClicked)
+        SliderButton(onSliderButtonClicked = onSliderButtonClicked)
         Button(
             onClick = { testBing() },
             colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
@@ -374,6 +392,7 @@ fun TitleColumn(
 fun TitleScreen(
     modifier: Modifier = Modifier,
     onInstrumentButtonClicked: () -> Unit = {},
+    onSliderButtonClicked: () -> Unit = {},
     detachListener: () -> Unit = {}
 ) {
     val image = painterResource(id = R.drawable.instrument)
@@ -390,6 +409,7 @@ fun TitleScreen(
         )
         TitleColumn(
             onInstrumentButtonClicked = onInstrumentButtonClicked,
+            onSliderButtonClicked = onSliderButtonClicked,
             detachListener = detachListener
         )
     }
@@ -415,6 +435,8 @@ fun GesturementsApp(
                     navController.navigate(
                         GesturementsScreen.Instrument.name
                     )
+                }, onSliderButtonClicked = {
+                    navController.navigate(GesturementsScreen.Slider.name)
                 }, detachListener = detachListener)
             }
 
@@ -423,6 +445,9 @@ fun GesturementsApp(
                     accelerometerViewModel = accelerometerViewModel,
                     gyroscopeViewModel = gyroscopeViewModel
                 )
+            }
+            composable(route = GesturementsScreen.Slider.name) {
+                SliderTestActivity()
             }
         }
     }
