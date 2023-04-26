@@ -10,7 +10,6 @@ import org.apache.commons.math3.util.FastMath.*
  */
 class FrameFeatureExtractor(
     frame: SensorFrame,
-    private val t: DoubleArray = frame.content.t.clone(),
     private val magnitudeArray: DoubleArray = getMagnitudeArray(
         frame.content.x,
         frame.content.y,
@@ -20,6 +19,7 @@ class FrameFeatureExtractor(
     val x: DoubleArrayFeatureWrapper = DoubleArrayFeatureWrapper(frame.content.x),
     val y: DoubleArrayFeatureWrapper = DoubleArrayFeatureWrapper(frame.content.y),
     val z: DoubleArrayFeatureWrapper = DoubleArrayFeatureWrapper(frame.content.z),
+    val t: DoubleArrayFeatureWrapper = DoubleArrayFeatureWrapper(frame.content.t)
 ) {
     /**
      * Returns a summary of the features extracted from the magnitude array.
@@ -60,6 +60,7 @@ class DoubleArrayFeatureWrapper(array: DoubleArray) {
     val iqr: Double by lazy { stats.getPercentile(75.0) - stats.getPercentile(25.0) }
     val skewness: Double by lazy { stats.skewness }
     val kurtosis: Double by lazy { stats.skewness }
+    val sum: Double by lazy { stats.sum }
 }
 
 /**
