@@ -28,7 +28,7 @@ class GesturementsSimpleClassifier(private val synthesizer: GesturementsSynthesi
     val features = GesturementsFeatures()
 
     private val accelFreqCorr = 750
-    private val gyroVolumeCorr = 0.02
+    private val gyroVolumeCorr = 0.1
     private val minGyroVolumeDelta = 0.005
 
     override var volume = 0.5
