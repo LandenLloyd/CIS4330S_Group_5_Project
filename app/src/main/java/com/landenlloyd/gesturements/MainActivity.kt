@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     // CONFIGURATION OPTIONS
     private var displayTimingInformation = false
     private var displayStatistics = false
+    private var uploadDataToFirebase = false
 
     private var sensorManager: SensorManager? = null
     private var sensorManagerEnabled = false
@@ -93,11 +94,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
             val accelerometerPreprocessor = SensorFramePreprocessor(
                 accelerometerFrame,
-                displayTimingInformation = displayTimingInformation
+                displayTimingInformation = displayTimingInformation,
+                uploadToFirebase = uploadDataToFirebase
             )
             val gyroscopePreprocessor = SensorFramePreprocessor(
                 gyroscopeFrame,
-                displayTimingInformation = displayTimingInformation
+                displayTimingInformation = displayTimingInformation,
+                uploadToFirebase = uploadDataToFirebase
             )
 
             // Get a baseline Fourier Transform to select parameters for filters
@@ -148,16 +151,20 @@ class MainActivity : ComponentActivity(), SensorEventListener {
      * @param pathString the sub-path in the Firebase Realtime DB to write to
      */
     private fun getFirebaseWriteFunction(pathString: String): (Long, Double, Double, Double) -> Unit {
-        // Create functions that can be used by our Sensor3DViewModels to write to Firebase
-        var readNumber = 0
-        return { t: Long, x: Double, y: Double, z: Double ->
-            val target =
-                firebaseDatabaseReference.child(pathString).child(readNumber.toString())
-            readNumber++
-            target.child("t").setValue(t)
-            target.child("x").setValue(x)
-            target.child("y").setValue(y)
-            target.child("z").setValue(z)
+        if (uploadDataToFirebase) {
+            // Create functions that can be used by our Sensor3DViewModels to write to Firebase
+            var readNumber = 0
+            return { t: Long, x: Double, y: Double, z: Double ->
+                val target =
+                    firebaseDatabaseReference.child(pathString).child(readNumber.toString())
+                readNumber++
+                target.child("t").setValue(t)
+                target.child("x").setValue(x)
+                target.child("y").setValue(y)
+                target.child("z").setValue(z)
+            }
+        } else {
+            return { _: Long, _: Double, _: Double, _: Double -> }
         }
     }
 

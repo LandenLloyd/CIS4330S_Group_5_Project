@@ -11,7 +11,8 @@ import kotlin.math.roundToInt
 
 class SensorFramePreprocessor(
     var frame: SensorFrame,
-    private val displayTimingInformation: Boolean = false
+    private val displayTimingInformation: Boolean = false,
+    private val uploadToFirebase: Boolean = false,
 ) {
     /**
      * Returns the sampling frequency of this fixed time interval is Hertz (sample / second)
@@ -49,10 +50,12 @@ class SensorFramePreprocessor(
      * Debug function to help send a frequency domain graph to Firebase
      */
     private fun freqToFirebase(reference: DatabaseReference, fT: DoubleArray, freq: DoubleArray) {
-        for (index in fT.indices) {
-            val subRef = reference.child(index.toString())
-            subRef.child("freq").setValue(freq[index])
-            subRef.child("magnitude").setValue(fT[index])
+        if (uploadToFirebase) {
+            for (index in fT.indices) {
+                val subRef = reference.child(index.toString())
+                subRef.child("freq").setValue(freq[index])
+                subRef.child("magnitude").setValue(fT[index])
+            }
         }
     }
 
