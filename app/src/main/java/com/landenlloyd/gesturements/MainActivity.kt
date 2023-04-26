@@ -253,7 +253,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 }
 
 enum class GesturementsScreen {
-    Title, Instrument
+    Title, Instrument, Synth
 }
 
 @Composable
@@ -274,7 +274,11 @@ fun TitleText(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun GesturementsButton(modifier: Modifier = Modifier, onButtonClicked: () -> Unit = {}, text: String = "placeholder") {
+fun GesturementsButton(
+    modifier: Modifier = Modifier,
+    onButtonClicked: () -> Unit = {},
+    text: String = "placeholder"
+) {
     Button(
         onClick = { onButtonClicked() },
         colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
@@ -303,9 +307,18 @@ fun TitleColumn(
             .wrapContentSize(align = Alignment.Center)
     ) {
         TitleText()
-        GesturementsButton(onButtonClicked = onSynthesizerButtonClicked, text = stringResource(id = R.string.synth_button_text))
-        GesturementsButton(onButtonClicked = onInstrumentButtonClicked, text = stringResource(id = R.string.instrument_button_text))
-        GesturementsButton(onButtonClicked = onSliderButtonClicked, text = stringResource(id = R.string.slider_button_text))
+        GesturementsButton(
+            onButtonClicked = onSynthesizerButtonClicked,
+            text = stringResource(id = R.string.synth_button_text)
+        )
+        GesturementsButton(
+            onButtonClicked = onInstrumentButtonClicked,
+            text = stringResource(id = R.string.instrument_button_text)
+        )
+        GesturementsButton(
+            onButtonClicked = onSliderButtonClicked,
+            text = stringResource(id = R.string.slider_button_text)
+        )
         // It is helpful to have a button to detach listeners, allowing the network to catch up
         Button(
             onClick = detachListener,
@@ -325,6 +338,7 @@ fun TitleColumn(
 @Composable
 fun TitleScreen(
     modifier: Modifier = Modifier,
+    onSynthesizerButtonClicked: () -> Unit,
     onInstrumentButtonClicked: () -> Unit = {},
     onSliderButtonClicked: () -> Unit = {},
     detachListener: () -> Unit = {}
@@ -342,6 +356,7 @@ fun TitleScreen(
             alpha = 0.75f
         )
         TitleColumn(
+            onSynthesizerButtonClicked = onSynthesizerButtonClicked,
             onInstrumentButtonClicked = onInstrumentButtonClicked,
             onSliderButtonClicked = onSliderButtonClicked,
             detachListener = detachListener
@@ -372,14 +387,18 @@ fun GesturementsApp(
                     )
                 }, onSliderButtonClicked = {
                     navigateToSynthSlider(context)
+                }, onSynthesizerButtonClicked = {
+                    navController.navigate(GesturementsScreen.Synth.name)
                 }, detachListener = detachListener)
             }
-
             composable(route = GesturementsScreen.Instrument.name) {
                 InstrumentReadingScreen(
                     accelerometerViewModel = accelerometerViewModel,
                     gyroscopeViewModel = gyroscopeViewModel
                 )
+            }
+            composable(route = GesturementsScreen.Synth.name) {
+                SynthPage()
             }
         }
     }
