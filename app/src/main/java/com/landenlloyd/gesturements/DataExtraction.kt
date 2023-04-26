@@ -34,7 +34,7 @@ class SensorListener(
     // CONFIGURATION OPTIONS
     private var displayTimingInformation = false
     private var displayStatistics = false
-    private var uploadDataToFirebase = false
+    private var uploadDataToFirebase = true
 
     private var sensorManager: SensorManager? = null
     private var sensorManagerEnabled = false
@@ -93,7 +93,7 @@ class SensorListener(
             accelPreprocessEntryNum++
 
             // Apply filters
-            accelerometerPreprocessor.highPassFilter(5.0)
+            accelerometerPreprocessor.highPassFilter(3.0)
             accelerometerPreprocessor.forEach(accelPostLowPassWriteFunction)
 
             // Apply moving average smoothing
