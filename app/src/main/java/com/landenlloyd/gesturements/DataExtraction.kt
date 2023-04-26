@@ -34,7 +34,7 @@ class SensorListener(
     // CONFIGURATION OPTIONS
     private var displayTimingInformation = false
     private var displayStatistics = false
-    private var uploadDataToFirebase = true
+    private var uploadDataToFirebase = false
 
     private var sensorManager: SensorManager? = null
     private var sensorManagerEnabled = false
