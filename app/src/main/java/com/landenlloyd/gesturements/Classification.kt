@@ -1,13 +1,17 @@
 package com.landenlloyd.gesturements
 
+import android.util.Log
 import com.jsyn.JSyn
 import com.jsyn.Synthesizer
 import com.jsyn.unitgen.LineOut
 import com.jsyn.unitgen.SineOscillator
 import com.landenlloyd.gesturements.android.JSynAndroidAudioDevice
+import org.apache.commons.math3.util.FastMath.abs
 import kotlin.math.roundToInt
 
 interface GesturementsClassifier {
+    var volume: Double
+
     fun classify(accelFeatures: FrameFeatureExtractor, gyroFeatures: FrameFeatureExtractor)
 
     fun startPlayback()
@@ -21,9 +25,13 @@ interface GesturementsClassifier {
  */
 class GesturementsSimpleClassifier(private val synthesizer: GesturementsSynthesizer) :
     GesturementsClassifier {
-    private val accelFreqCorr = 50
+    val features = GesturementsFeatures()
 
-    private var volume = 0.05
+    private val accelFreqCorr = 750
+    private val gyroVolumeCorr = 0.02
+    private val minGyroVolumeDelta = 0.005
+
+    override var volume = 0.5
 
     init {
         synthesizer.initialize()
@@ -35,13 +43,17 @@ class GesturementsSimpleClassifier(private val synthesizer: GesturementsSynthesi
      */
     override fun classify(
         accelFeatures: FrameFeatureExtractor,
-        gyroFeatures: FrameFeatureExtractor
+        gyroFeatures: FrameFeatureExtractor,
     ) {
+        features.addFrames(accelFeatures, gyroFeatures)
+
         // The gyroscope controls the volume
         // change in volume = totalrads / 1 sec * ∆t ns * 1s / 10e9 ns * 1 half-rotation / π rads
         // Subtract from the volume since counter-clockwise is positive, but we expect clockwise to
         // increase the volume.
-        volume -= gyroFeatures.z.sum * (gyroFeatures.t.max - gyroFeatures.t.min) / 1000000000 / Math.PI
+        val deltaVolume = features.gyroSum * features.gyroDeltaTime / 1000000000 / Math.PI * gyroVolumeCorr
+        if (abs(deltaVolume) > minGyroVolumeDelta)
+            volume -= deltaVolume
 
         // cap the volume between 0 and 1
         if (volume < 0.0) {
@@ -52,10 +64,16 @@ class GesturementsSimpleClassifier(private val synthesizer: GesturementsSynthesi
 
         // The accelerometer controls the frequency with its magnitude
         // We round it to an int since the accelerometer can have some noise
-        val freq = (accelFeatures.magnitude.mean * accelFreqCorr).roundToInt()
+        val freqBeforeRounding = features.accelMean * accelFreqCorr
+        var freq = freqBeforeRounding.roundToInt()
+
+        // We move the frequency in steps of 10 to make it easier for the user to maintain frequency
+        freq = (freq / 10) * 10
+
+        Log.d("Classification", "Class id: ${this}, Volume: $volume, Freq: $freqBeforeRounding")
 
         // If the user is not moving the device, we turn the volume down to zero as a sort of "off"
-        if (freq == 0) {
+        if (freq <= 90) {
             synthesizer.adjustPlayback(0.0, 0.0)
         } else {
             synthesizer.adjustPlayback(freq.toDouble(), volume)
@@ -82,6 +100,8 @@ interface GesturementsSynthesizer {
 }
 
 class GesturementsSynthSynthesizer : GesturementsSynthesizer {
+    val numSteps = 10
+
     private lateinit var synth: Synthesizer
     private lateinit var oscillator: SineOscillator
     private lateinit var lineOut: LineOut
@@ -103,8 +123,17 @@ class GesturementsSynthSynthesizer : GesturementsSynthesizer {
     }
 
     override fun adjustPlayback(frequency: Double, amplitude: Double) {
-        oscillator.frequency.set(frequency)
-        oscillator.amplitude.set(amplitude)
+        // We actually adjust the frequency and amplitude in steps so that the transition isn't
+        // as "rough" to the listener.
+        val deltaFreq = frequency - oscillator.frequency.get()
+        val deltaAmp = amplitude - oscillator.amplitude.get()
+
+        for (i in 0 until numSteps) {
+            oscillator.frequency.set(oscillator.frequency.get() + deltaFreq / numSteps)
+            oscillator.amplitude.set(oscillator.amplitude.get() + deltaAmp / numSteps)
+
+            Thread.sleep(10)
+        }
     }
 
     override fun startPlayback() {

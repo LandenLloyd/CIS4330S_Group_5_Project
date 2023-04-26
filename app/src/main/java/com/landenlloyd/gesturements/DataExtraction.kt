@@ -246,7 +246,7 @@ class OverlapValueException(overlap: Float) :
  * one of the connectors from an instance of FrameSync (refer to FrameSync for more details)
  */
 class Sensor3DViewModel(
-    frameWidth: Int = 30,
+    frameWidth: Int = 20,
     private val overlap: Float = 0f,
     private val frameSyncConnector: FrameSync.FrameSyncConnector? = null,
     private val onWrite: ((Long, Double, Double, Double) -> Unit)? = null

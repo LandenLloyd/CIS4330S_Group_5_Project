@@ -46,5 +46,6 @@ fun SynthBody(
     Column(modifier = modifier) {
         Text(text = accelStats)
         Text(text = gyroStats)
+        GesturementsButton(onButtonClicked = {classifier.volume = 0.5}, text = "Recalibrate Volume")
     }
 }
