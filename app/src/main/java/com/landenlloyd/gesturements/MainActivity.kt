@@ -30,11 +30,6 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
-import com.jsyn.JSyn
-import com.jsyn.Synthesizer
-import com.jsyn.unitgen.LineOut
-import com.jsyn.unitgen.SineOscillator
-import com.landenlloyd.gesturements.android.JSynAndroidAudioDevice
 import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 import kotlin.system.measureNanoTime
 
@@ -272,9 +267,9 @@ fun TitleText(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun InstrumentButton(modifier: Modifier = Modifier, onInstrumentButtonClicked: () -> Unit = {}) {
+fun GesturementsButton(modifier: Modifier = Modifier, onButtonClicked: () -> Unit = {}, text: String = "placeholder") {
     Button(
-        onClick = { onInstrumentButtonClicked() },
+        onClick = { onButtonClicked() },
         colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
         shape = RoundedCornerShape(8.dp),
         elevation = ButtonDefaults.elevation(8.dp),
@@ -282,73 +277,15 @@ fun InstrumentButton(modifier: Modifier = Modifier, onInstrumentButtonClicked: (
     ) {
         Text(
             modifier = Modifier.padding(8.dp),
-            text = stringResource(id = R.string.instrument_button_text)
+            text = text
         )
     }
 }
-
-@Composable
-fun SliderButton(modifier: Modifier = Modifier, onSliderButtonClicked: () -> Unit = {}) {
-    Button(
-        onClick = { onSliderButtonClicked() },
-        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
-        shape = RoundedCornerShape(8.dp),
-        elevation = ButtonDefaults.elevation(8.dp),
-        modifier = modifier.wrapContentSize(align = Alignment.Center)
-    ) {
-        Text(
-            modifier = Modifier.padding(8.dp),
-            text = stringResource(id = R.string.slider_button_text)
-        )
-    }
-}
-
-/* https://github.com/philburk/jsyn/blob/master/examples/src/main/java/com/jsyn/examples/PlayTone.java
- * Example function to test sound playback functionality. TODO: remove */
-private fun testBing() {
-
-    // Create a context for the synthesizer.
-    val synth: Synthesizer = JSyn.createSynthesizer(JSynAndroidAudioDevice())
-
-    // Start synthesizer using default stereo output at 44100 Hz.
-    synth.start()
-
-    // Add a tone generator.
-    val oscillator = SineOscillator()
-    synth.add(oscillator)
-    // Add a stereo audio output unit.
-    val lineOut = LineOut()
-    synth.add(lineOut)
-
-    // Connect the oscillator to both channels of the output.
-    oscillator.output.connect(0, lineOut.input, 0)
-    oscillator.output.connect(0, lineOut.input, 1)
-
-    // Set the frequency and amplitude for the sine wave.
-    oscillator.frequency.set(345.0)
-    oscillator.amplitude.set(0.6)
-
-    // We only need to start the LineOut. It will pull data from the
-    // oscillator.
-    lineOut.start()
-
-    // Sleep while the sound is generated in the background.
-    try {
-        val time: Double = synth.currentTime
-        // Sleep for a few seconds.
-        synth.sleepUntil(time + 4.0)
-    } catch (e: InterruptedException) {
-        e.printStackTrace()
-    }
-
-    // Stop everything.
-    synth.stop()
-}
-
 
 @Composable
 fun TitleColumn(
     modifier: Modifier = Modifier,
+    onSynthesizerButtonClicked: () -> Unit = {},
     onInstrumentButtonClicked: () -> Unit = {},
     onSliderButtonClicked: () -> Unit = {},
     detachListener: () -> Unit = {}
@@ -359,20 +296,9 @@ fun TitleColumn(
             .wrapContentSize(align = Alignment.Center)
     ) {
         TitleText()
-        InstrumentButton(onInstrumentButtonClicked = onInstrumentButtonClicked)
-        SliderButton(onSliderButtonClicked = onSliderButtonClicked)
-        Button(
-            onClick = { testBing() },
-            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
-            shape = RoundedCornerShape(8.dp),
-            elevation = ButtonDefaults.elevation(8.dp),
-            modifier = modifier.wrapContentSize(align = Alignment.Center)
-        ) {
-            Text(
-                modifier = Modifier.padding(8.dp),
-                text = "Bing"
-            )
-        }
+        GesturementsButton(onButtonClicked = onSynthesizerButtonClicked, text = stringResource(id = R.string.synth_button_text))
+        GesturementsButton(onButtonClicked = onInstrumentButtonClicked, text = stringResource(id = R.string.instrument_button_text))
+        GesturementsButton(onButtonClicked = onSliderButtonClicked, text = stringResource(id = R.string.slider_button_text))
         // It is helpful to have a button to detach listeners, allowing the network to catch up
         Button(
             onClick = detachListener,
