@@ -27,7 +27,10 @@ import kotlin.system.measureNanoTime
  * The SensorListener is responsible for registering a callback to the accelerometer and gyroscope,
  * and then processing the received data through a pipeline.
  */
-class SensorListener(private val applicationContext: Context): SensorEventListener {
+class SensorListener(
+    private val applicationContext: Context,
+    var featureExtractorCallback: (FrameFeatureExtractor, FrameFeatureExtractor) -> Unit = { _: FrameFeatureExtractor, _: FrameFeatureExtractor -> }
+) : SensorEventListener {
     // CONFIGURATION OPTIONS
     private var displayTimingInformation = false
     private var displayStatistics = false
@@ -118,6 +121,8 @@ class SensorListener(private val applicationContext: Context): SensorEventListen
             if (displayStatistics) Log.d("accelFeatures", accelFeatures.summarize())
             val gyroFeatures = FrameFeatureExtractor(gyroscopePreprocessor.frame)
             if (displayStatistics) Log.d("gyroFeatures", gyroFeatures.summarize())
+
+            featureExtractorCallback(accelFeatures, gyroFeatures)
         }
     }
 
@@ -147,7 +152,8 @@ class SensorListener(private val applicationContext: Context): SensorEventListen
     }
 
     private fun setUpSensor() {
-        sensorManager = applicationContext.getSystemService(ComponentActivity.SENSOR_SERVICE) as SensorManager
+        sensorManager =
+            applicationContext.getSystemService(ComponentActivity.SENSOR_SERVICE) as SensorManager
         sensorManagerEnabled = true
 
         initializeFirebase()
