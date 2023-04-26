@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 
 @Composable
@@ -30,17 +31,17 @@ fun AccelerometerReading(
 @Composable
 fun InstrumentReadingScreen(
     modifier: Modifier = Modifier,
-    accelerometerViewModel: Sensor3DViewModel,
-    gyroscopeViewModel: Sensor3DViewModel
 ) {
+    val listener = SensorListener(applicationContext = LocalContext.current)
+
     Column {
         Text(
             modifier = modifier,
             text = stringResource(id = R.string.instrument_reading_title)
         )
         AccelerometerReading(
-            accelerometerViewModel = accelerometerViewModel,
-            gyroscopeViewModel = gyroscopeViewModel
+            accelerometerViewModel = listener.accelerometerViewModel,
+            gyroscopeViewModel = listener.gyroscopeViewModel
         )
     }
 }
