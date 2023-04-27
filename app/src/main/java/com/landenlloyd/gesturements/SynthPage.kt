@@ -82,7 +82,16 @@ fun VolumeBar(
 @Composable
 fun FrequencyChart(modifier: Modifier = Modifier, freqPoints: List<Float>) {
     Column(modifier = modifier) {
-        Text(modifier = Modifier.padding(PaddingValues(vertical = 12.dp)), text = "Frequency Chart")
+        Text(
+            modifier = Modifier.padding(PaddingValues(vertical = 12.dp)),
+            text = "Frequency Chart",
+            style = MaterialTheme.typography.h5
+        )
+        Text(
+            modifier = Modifier.padding(bottom = 12.dp),
+            text = "X-axis is the index of each reading, with 0 being oldest, and Y-axis is the magnitude of acceleration (m/s^2)",
+            style = MaterialTheme.typography.caption
+        )
         LineChart(
             linesChartData = listOf(
                 LineChartData(

@@ -87,7 +87,7 @@ fun TitleColumn(
 ) {
     Surface(
         modifier = modifier.fillMaxSize(0.8f),
-        color = MaterialTheme.colors.primary.copy(0.75f),
+        color = MaterialTheme.colors.primaryVariant.copy(0.75f),
         shape = RoundedCornerShape(8.dp),
         elevation = 8.dp,
     ) {
