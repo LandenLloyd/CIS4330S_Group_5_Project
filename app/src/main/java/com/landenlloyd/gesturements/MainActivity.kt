@@ -97,13 +97,27 @@ fun TitleColumn(
                 .wrapContentSize(align = Alignment.Center),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            TitleText(modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(32.dp))
+            TitleText(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(32.dp)
+            )
             GesturementsButton(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 onButtonClicked = onSynthesizerButtonClicked,
                 text = stringResource(id = R.string.synth_button_text)
+            )
+            Divider(
+                color = MaterialTheme.colors.onPrimary,
+                modifier = Modifier.padding(top = 24.dp)
+            )
+            Text(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .wrapContentSize(align = Alignment.Center),
+                text = "Debug Tools",
+                style = Typography().h5,
+                color = MaterialTheme.colors.onPrimary
             )
             GesturementsButton(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
