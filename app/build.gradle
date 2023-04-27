@@ -83,4 +83,6 @@ dependencies {
         exclude group: 'org.apache.maven.surefire', module: 'common-java'
         exclude group: 'org.apache.maven.surefire', module: 'surefire-api'
     })
+
+    implementation "com.github.tehras:charts:0.2.4-alpha"
 }

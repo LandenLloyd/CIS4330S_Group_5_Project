@@ -10,6 +10,7 @@ import org.apache.commons.math3.util.FastMath.abs
 import kotlin.math.roundToInt
 
 interface GesturementsClassifier {
+    val features: GesturementsFeatures
     var volume: Double
 
     fun classify(accelFeatures: FrameFeatureExtractor, gyroFeatures: FrameFeatureExtractor)
@@ -25,7 +26,7 @@ interface GesturementsClassifier {
  */
 class GesturementsSimpleClassifier(private val synthesizer: GesturementsSynthesizer) :
     GesturementsClassifier {
-    val features = GesturementsFeatures()
+    override val features = GesturementsFeatures()
 
     private val accelFreqCorr = 750
     private val gyroVolumeCorr = 0.1

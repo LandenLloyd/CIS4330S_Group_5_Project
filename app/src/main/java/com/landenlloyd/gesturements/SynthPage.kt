@@ -13,6 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.tehras.charts.line.LineChart
+import com.github.tehras.charts.line.LineChartData
+import com.github.tehras.charts.line.renderer.line.SolidLineDrawer
+import com.github.tehras.charts.line.renderer.point.FilledCircularPointDrawer
+import com.github.tehras.charts.line.renderer.xaxis.SimpleXAxisDrawer
+import com.github.tehras.charts.line.renderer.yaxis.SimpleYAxisDrawer
+import com.github.tehras.charts.piechart.animation.simpleChartAnimation
 import com.landenlloyd.gesturements.ui.theme.GesturementsTheme
 
 @Composable
@@ -27,21 +34,42 @@ fun SynthPage(modifier: Modifier = Modifier) {
 
 const val statSummaryTestString =
     "Magnitude statistics summary:\nMean:                0.00\nMedian:              0.00\nStandard Deviation:  0.00\nSkewness:            0.00\nKurtosis:            0.00"
+val freqTestList = listOf(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f)
 
 @Composable
 fun VolumeBar(
     modifier: Modifier = Modifier,
     progress: Float = 0.0f
 ) {
-    Column (modifier = modifier){
+    Column(modifier = modifier) {
         Text(text = "Current Volume")
         LinearProgressIndicator(progress = progress)
     }
 }
 
 @Composable
-fun FrequencyChart(modifier: Modifier = Modifier) {
-    Text(modifier = modifier, text = "Pretend that there's a chart here.")
+fun FrequencyChart(modifier: Modifier = Modifier, freqPoints: List<Float>) {
+    Column(modifier = modifier) {
+        Text(modifier = Modifier.padding(PaddingValues(vertical = 12.dp)), text = "Frequency Chart")
+        LineChart(
+            linesChartData = listOf(
+                LineChartData(
+                    points = freqPoints.withIndex()
+                        .map { (index, value) -> LineChartData.Point(value, "$index") },
+                    lineDrawer = SolidLineDrawer()
+                )
+            ),
+            // Optional properties.
+            modifier = modifier
+                .fillMaxHeight(0.3f)
+                .fillMaxWidth(0.8f),
+            animation = simpleChartAnimation(),
+            pointDrawer = FilledCircularPointDrawer(),
+            xAxisDrawer = SimpleXAxisDrawer(),
+            yAxisDrawer = SimpleYAxisDrawer(),
+            horizontalOffset = 5f
+        )
+    }
 }
 
 @Composable
@@ -62,6 +90,10 @@ fun SynthBody(
         mutableStateOf(0.5f)
     }
 
+    var freqPoints: List<Float> by remember {
+        mutableStateOf(freqTestList)
+    }
+
     listener?.featureExtractorCallback = { f1: FrameFeatureExtractor, f2: FrameFeatureExtractor ->
         accelStats = f1.summarize()
         gyroStats = f2.summarize()
@@ -69,6 +101,8 @@ fun SynthBody(
         classifier?.classify(f1, f2)
 
         progress = classifier?.volume?.toFloat() ?: 0.0f
+        freqPoints =
+            classifier?.features?.accelValues?.toList()?.map { it.toFloat() } ?: freqTestList
     }
 
     Box(
@@ -82,7 +116,10 @@ fun SynthBody(
             verticalArrangement = Arrangement.SpaceAround
         ) {
             VolumeBar(modifier = Modifier.align(Alignment.CenterHorizontally), progress = progress)
-            FrequencyChart(modifier = Modifier.align(Alignment.CenterHorizontally))
+            FrequencyChart(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                freqPoints = freqPoints
+            )
             Text(modifier = Modifier.align(Alignment.CenterHorizontally), text = accelStats)
             Text(modifier = Modifier.align(Alignment.CenterHorizontally), text = gyroStats)
             GesturementsButton(
