@@ -48,19 +48,13 @@ enum class GesturementsScreen {
 
 @Composable
 fun TitleText(modifier: Modifier = Modifier) {
-    Surface(
-        color = MaterialTheme.colors.background,
-        shape = RoundedCornerShape(8.dp),
-        elevation = 8.dp,
+    Text(
         modifier = modifier
-            .wrapContentSize(align = Alignment.Center)
-    ) {
-        Text(
-            modifier = Modifier.padding(16.dp),
-            text = stringResource(id = R.string.app_name),
-            style = Typography().h5
-        )
-    }
+            .wrapContentSize(align = Alignment.Center),
+        text = stringResource(id = R.string.app_name),
+        style = Typography().h4,
+        color = MaterialTheme.colors.onPrimary
+    )
 }
 
 @Composable
@@ -74,7 +68,7 @@ fun GesturementsButton(
         colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
         shape = RoundedCornerShape(8.dp),
         elevation = ButtonDefaults.elevation(8.dp),
-        modifier = modifier.wrapContentSize(align = Alignment.Center)
+        modifier = modifier.fillMaxWidth(0.7f)
     ) {
         Text(
             modifier = Modifier.padding(8.dp),
@@ -91,34 +85,40 @@ fun TitleColumn(
     onSliderButtonClicked: () -> Unit = {},
     detachListener: () -> Unit = {}
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .wrapContentSize(align = Alignment.Center)
+    Surface(
+        modifier = modifier.fillMaxSize(0.8f),
+        color = MaterialTheme.colors.primary.copy(0.75f),
+        shape = RoundedCornerShape(8.dp),
+        elevation = 8.dp,
     ) {
-        TitleText()
-        GesturementsButton(
-            onButtonClicked = onSynthesizerButtonClicked,
-            text = stringResource(id = R.string.synth_button_text)
-        )
-        GesturementsButton(
-            onButtonClicked = onInstrumentButtonClicked,
-            text = stringResource(id = R.string.instrument_button_text)
-        )
-        GesturementsButton(
-            onButtonClicked = onSliderButtonClicked,
-            text = stringResource(id = R.string.slider_button_text)
-        )
-        // It is helpful to have a button to detach listeners, allowing the network to catch up
-        Button(
-            onClick = detachListener,
-            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background),
-            shape = RoundedCornerShape(8.dp),
-            elevation = ButtonDefaults.elevation(8.dp),
-            modifier = modifier.wrapContentSize(align = Alignment.Center)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .wrapContentSize(align = Alignment.Center),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                modifier = Modifier.padding(8.dp),
+            TitleText(modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(32.dp))
+            GesturementsButton(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                onButtonClicked = onSynthesizerButtonClicked,
+                text = stringResource(id = R.string.synth_button_text)
+            )
+            GesturementsButton(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                onButtonClicked = onInstrumentButtonClicked,
+                text = stringResource(id = R.string.instrument_button_text)
+            )
+            GesturementsButton(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                onButtonClicked = onSliderButtonClicked,
+                text = stringResource(id = R.string.slider_button_text)
+            )
+            // It is helpful to have a button to detach listeners, allowing the network to catch up
+            GesturementsButton(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                onButtonClicked = detachListener,
                 text = "Stop Sensing"
             )
         }
@@ -146,6 +146,7 @@ fun TitleScreen(
             alpha = 0.75f
         )
         TitleColumn(
+            modifier = Modifier.align(Alignment.Center),
             onSynthesizerButtonClicked = onSynthesizerButtonClicked,
             onInstrumentButtonClicked = onInstrumentButtonClicked,
             onSliderButtonClicked = onSliderButtonClicked,
@@ -197,6 +198,6 @@ fun navigateToSynthSlider(context: Context) {
 @Composable
 fun DefaultPreview() {
     GesturementsTheme {
-        SynthPage()
+        GesturementsApp()
     }
 }

@@ -42,13 +42,16 @@ class SensorListener(
     lateinit var accelerometerViewModel: Sensor3DViewModel
     lateinit var gyroscopeViewModel: Sensor3DViewModel
 
+    private var accelRawWrite: (Long, Double, Double, Double) -> Unit = {_: Long, _: Double, _: Double, _: Double -> }
+    private var gyroRawWrite: (Long, Double, Double, Double) -> Unit = {_: Long, _: Double, _: Double, _: Double -> }
+
     // NOTE: originally, I was using a low-pass filter for the accelerometer. Rather than
     // renaming all variables from "LowPass" to just "Filter", I left the names stand.
-    private lateinit var accelPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
-    private lateinit var accelPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
+    private var accelPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit = {_: Long, _: Double, _: Double, _: Double -> }
+    private var accelPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit = {_: Long, _: Double, _: Double, _: Double -> }
 
-    private lateinit var gyroPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit
-    private lateinit var gyroPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit
+    private var gyroPostLowPassWriteFunction: (Long, Double, Double, Double) -> Unit = {_: Long, _: Double, _: Double, _: Double -> }
+    private var gyroPostSmoothWriteFunction: (Long, Double, Double, Double) -> Unit = {_: Long, _: Double, _: Double, _: Double -> }
 
     private lateinit var frameSync: FrameSync
 
@@ -85,12 +88,14 @@ class SensorListener(
             )
 
             // Get a baseline Fourier Transform to select parameters for filters
-            accelerometerPreprocessor.fourierTransform(
-                accelPreprocessEntryNum,
-                firebaseDatabaseReference,
-                "accel_fft"
-            )
-            accelPreprocessEntryNum++
+            if (uploadDataToFirebase) {
+                accelerometerPreprocessor.fourierTransform(
+                    accelPreprocessEntryNum,
+                    firebaseDatabaseReference,
+                    "accel_fft"
+                )
+                accelPreprocessEntryNum++
+            }
 
             // Apply filters
             accelerometerPreprocessor.highPassFilter(3.0)
@@ -101,12 +106,14 @@ class SensorListener(
             accelerometerPreprocessor.forEach(accelPostSmoothWriteFunction)
 
             // Get a baseline Fourier Transform to select parameters for filters
-            gyroscopePreprocessor.fourierTransform(
-                gyroPreprocessEntryNum,
-                firebaseDatabaseReference,
-                "gyro_fft"
-            )
-            gyroPreprocessEntryNum++
+            if (uploadDataToFirebase) {
+                gyroscopePreprocessor.fourierTransform(
+                    gyroPreprocessEntryNum,
+                    firebaseDatabaseReference,
+                    "gyro_fft"
+                )
+                gyroPreprocessEntryNum++
+            }
 
             // Apply low pass filter
             gyroscopePreprocessor.lowPassFilter(10.0)
@@ -156,15 +163,17 @@ class SensorListener(
             applicationContext.getSystemService(ComponentActivity.SENSOR_SERVICE) as SensorManager
         sensorManagerEnabled = true
 
-        initializeFirebase()
+        if (uploadDataToFirebase) {
+            initializeFirebase()
 
-        // Create functions that can be used by our Sensor3DViewModels to write to Firebase
-        val accelRawWrite = getFirebaseWriteFunction("accel_raw")
-        val gyroRawWrite = getFirebaseWriteFunction("gyro_raw")
-        accelPostLowPassWriteFunction = getFirebaseWriteFunction("accel_post_low_pass")
-        accelPostSmoothWriteFunction = getFirebaseWriteFunction("accel_post_smooth")
-        gyroPostLowPassWriteFunction = getFirebaseWriteFunction("gyro_post_low_pass")
-        gyroPostSmoothWriteFunction = getFirebaseWriteFunction("gyro_post_smooth")
+            // Create functions that can be used by our Sensor3DViewModels to write to Firebase
+            accelRawWrite = getFirebaseWriteFunction("accel_raw")
+            gyroRawWrite = getFirebaseWriteFunction("gyro_raw")
+            accelPostLowPassWriteFunction = getFirebaseWriteFunction("accel_post_low_pass")
+            accelPostSmoothWriteFunction = getFirebaseWriteFunction("accel_post_smooth")
+            gyroPostLowPassWriteFunction = getFirebaseWriteFunction("gyro_post_low_pass")
+            gyroPostSmoothWriteFunction = getFirebaseWriteFunction("gyro_post_smooth")
+        }
 
         // Initialize the sensing pipeline
         frameSync = getFrameSync()

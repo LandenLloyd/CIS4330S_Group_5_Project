@@ -1,6 +1,5 @@
 package com.landenlloyd.gesturements
 
-import android.util.Log
 import com.jsyn.JSyn
 import com.jsyn.Synthesizer
 import com.jsyn.unitgen.LineOut
@@ -70,8 +69,6 @@ class GesturementsSimpleClassifier(private val synthesizer: GesturementsSynthesi
 
         // We move the frequency in steps of 10 to make it easier for the user to maintain frequency
         freq = (freq / 10) * 10
-
-        Log.d("Classification", "Class id: ${this}, Volume: $volume, Freq: $freqBeforeRounding")
 
         // If the user is not moving the device, we turn the volume down to zero as a sort of "off"
         if (freq <= 90) {
