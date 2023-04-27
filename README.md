@@ -75,3 +75,5 @@ frequency. "SynthPage" is the page where the user gestures to generate audio.
   audio over Android devices.
 - [charts](https://github.com/tehras/charts): an idiomatic charting library for Kotlin's Jetpack
   Compose used to produce the frequency time-series graph on the Synth page
+
+The app's background, a picture of a violin, can be found at https://pngimg.com/image/12815.
