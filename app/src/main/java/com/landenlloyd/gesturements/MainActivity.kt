@@ -197,6 +197,6 @@ fun navigateToSynthSlider(context: Context) {
 @Composable
 fun DefaultPreview() {
     GesturementsTheme {
-        InstrumentReadingScreen()
+        SynthPage()
     }
 }
