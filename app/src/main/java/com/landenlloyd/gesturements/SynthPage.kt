@@ -1,7 +1,11 @@
 package com.landenlloyd.gesturements
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.LinearProgressIndicator
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -10,7 +14,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.tehras.charts.line.LineChart
@@ -29,7 +35,33 @@ fun SynthPage(modifier: Modifier = Modifier) {
 
     classifier.startPlayback()
 
-    SynthBody(modifier = modifier.padding(16.dp), listener = listener, classifier = classifier)
+    val image = painterResource(id = R.drawable.instrument)
+
+    Box(modifier = modifier) {
+        Image(
+            painter = image,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxHeight()
+                .wrapContentHeight(align = Alignment.Top),
+            contentScale = ContentScale.FillWidth,
+            alpha = 0.75f
+        )
+        Surface(
+            modifier = Modifier
+                .fillMaxSize(0.75f)
+                .align(Alignment.Center),
+            color = MaterialTheme.colors.background,
+            shape = RoundedCornerShape(8.dp),
+            elevation = 8.dp
+        ) {
+            SynthBody(
+                modifier = Modifier.padding(16.dp),
+                listener = listener,
+                classifier = classifier
+            )
+        }
+    }
 }
 
 const val statSummaryTestString =
@@ -41,7 +73,7 @@ fun VolumeBar(
     modifier: Modifier = Modifier,
     progress: Float = 0.0f
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(PaddingValues(vertical = 12.dp))) {
         Text(text = "Current Volume")
         LinearProgressIndicator(progress = progress)
     }
@@ -120,12 +152,10 @@ fun SynthBody(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 freqPoints = freqPoints
             )
-            Text(modifier = Modifier.align(Alignment.CenterHorizontally), text = accelStats)
-            Text(modifier = Modifier.align(Alignment.CenterHorizontally), text = gyroStats)
             GesturementsButton(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 onButtonClicked = { classifier?.volume = 0.5 },
-                text = "Recalibrate Volume"
+                text = "Recalibrate Volume",
             )
         }
     }
